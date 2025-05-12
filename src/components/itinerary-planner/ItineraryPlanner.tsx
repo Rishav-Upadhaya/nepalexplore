@@ -314,14 +314,14 @@ export function ItineraryPlanner() {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
-                             <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                             <Select onValueChange={field.onChange} defaultValue={field.value || "none"}>
                                 <FormControl>
                                     <SelectTrigger className="h-11 text-base">
                                         <SelectValue placeholder="Select ending district (optional)" />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                     <SelectItem value="" className="text-base italic">None (leave blank)</SelectItem>
+                                     <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
                                     {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
                                         <SelectGroup key={region}>
                                             <SelectLabel className="font-bold">{region}</SelectLabel>
@@ -484,4 +484,3 @@ export function ItineraryPlanner() {
     </div>
   );
 }
-
