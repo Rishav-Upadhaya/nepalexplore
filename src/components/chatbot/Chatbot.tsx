@@ -19,8 +19,8 @@ interface Message {
 export function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    // Updated initial message
-    { role: 'model', content: 'Namaste! I\'m Pasang, your AI guide for Nepal. How can I assist you with your travel plans today?' }
+    // Updated initial message for politeness
+    { role: 'model', content: 'Namaste! I\'m Pasang, your friendly AI guide for Nepal Explorer. It would be my pleasure to assist you with planning your trip. How can I help today?' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -62,7 +62,7 @@ export function Chatbot() {
         variant: "destructive",
       });
        // Optionally add an error message to the chat
-       setMessages(prev => [...prev, { role: 'model', content: 'Sorry, I encountered an error. Please try asking again.' }]);
+       setMessages(prev => [...prev, { role: 'model', content: 'My apologies, I encountered an error. Could you please try asking again?' }]);
     } finally {
       setIsLoading(false);
     }
@@ -88,9 +88,11 @@ export function Chatbot() {
       </SheetTrigger>
       <SheetContent side="right" className="w-[90vw] max-w-md p-0 flex flex-col">
         <SheetHeader className="p-4 border-b bg-muted/50">
-          <SheetTitle className="flex items-center gap-2 text-lg">
+          {/* Added accessible title */}
+           <SheetTitle className="sr-only">AI Tour Guide Pasang Chat Window</SheetTitle>
+          <div className="flex items-center gap-2 text-lg">
             <Bot className="h-6 w-6 text-primary" /> AI Tour Guide (Pasang)
-          </SheetTitle>
+          </div>
         </SheetHeader>
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           <div className="space-y-4 pb-4"> {/* Add padding-bottom */}
