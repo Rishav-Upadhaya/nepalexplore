@@ -221,195 +221,240 @@ export function ItineraryPlanner() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
-        <Card className="lg:col-span-1 shadow-xl sticky top-24 border border-primary/20">
-          <CardHeader className="bg-primary/5 p-6">
-            <CardTitle className="flex items-center gap-2 text-primary"><Route className="h-7 w-7" /> Plan Your Trip</CardTitle>
-            <CardDescription className="text-base">Select your preferences below.</CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="itineraryType"
-                  render={({ field }) => (
-                    <FormItem className="space-y-3">
-                      <FormLabel className="font-semibold text-base">Choose Itinerary Type</FormLabel>
-                      <FormControl>
-                        <RadioGroup
-                          onValueChange={(value) => {
-                              field.onChange(value);
-                              // Reset specific fields if switching to random
-                              if (value === 'random') {
-                                  form.resetField("interests");
-                                  form.resetField("endPoint");
-                                  form.resetField("mustVisitPlaces");
-                              }
-                          }}
-                          defaultValue={field.value}
-                          className="flex space-x-4"
-                        >
-                          <FormItem className="flex items-center space-x-2 space-y-0">
+        <div className="lg:col-span-1 sticky top-24 space-y-8"> {/* Added space-y-8 */}
+            {/* Plan Your Trip Card */}
+            <Card className="shadow-xl border border-primary/20">
+                <CardHeader className="bg-primary/5 p-6">
+                    <CardTitle className="flex items-center gap-2 text-primary"><Route className="h-7 w-7" /> Plan Your Trip</CardTitle>
+                    <CardDescription className="text-base">Select your preferences below.</CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                    <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        <FormField
+                        control={form.control}
+                        name="itineraryType"
+                        render={({ field }) => (
+                            <FormItem className="space-y-3">
+                            <FormLabel className="font-semibold text-base">Choose Itinerary Type</FormLabel>
                             <FormControl>
-                              <RadioGroupItem value="custom" id="custom" />
+                                <RadioGroup
+                                onValueChange={(value) => {
+                                    field.onChange(value);
+                                    // Reset specific fields if switching to random
+                                    if (value === 'random') {
+                                        form.resetField("interests");
+                                        form.resetField("endPoint");
+                                        form.resetField("mustVisitPlaces");
+                                    }
+                                }}
+                                defaultValue={field.value}
+                                className="flex space-x-4"
+                                >
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="custom" id="custom" />
+                                    </FormControl>
+                                    <FormLabel htmlFor="custom" className="font-medium text-base flex items-center gap-1.5 cursor-pointer">
+                                    <Edit className="h-4 w-4"/> Custom Plan
+                                    </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                    <RadioGroupItem value="random" id="random" />
+                                    </FormControl>
+                                    <FormLabel htmlFor="random" className="font-medium text-base flex items-center gap-1.5 cursor-pointer">
+                                        <Shuffle className="h-4 w-4"/> Random Adventure
+                                    </FormLabel>
+                                </FormItem>
+                                </RadioGroup>
                             </FormControl>
-                            <FormLabel htmlFor="custom" className="font-medium text-base flex items-center gap-1.5 cursor-pointer">
-                               <Edit className="h-4 w-4"/> Custom Plan
-                            </FormLabel>
-                          </FormItem>
-                          <FormItem className="flex items-center space-x-2 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value="random" id="random" />
-                            </FormControl>
-                            <FormLabel htmlFor="random" className="font-medium text-base flex items-center gap-1.5 cursor-pointer">
-                                <Shuffle className="h-4 w-4"/> Random Adventure
-                            </FormLabel>
-                          </FormItem>
-                        </RadioGroup>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="startPoint"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="font-semibold text-base">Starting Point</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || undefined} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger className="h-11 text-base">
-                                    <SelectValue placeholder="Select starting district" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
-                                    <SelectGroup key={region}>
-                                        <SelectLabel className="font-bold">{region}</SelectLabel>
-                                        {districts.map(d => (
-                                            <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="startPoint"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="font-semibold text-base">Starting Point</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || undefined} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger className="h-11 text-base">
+                                            <SelectValue placeholder="Select starting district" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
+                                            <SelectGroup key={region}>
+                                                <SelectLabel className="font-bold">{region}</SelectLabel>
+                                                {districts.map(d => (
+                                                    <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
+                                                ))}
+                                            </SelectGroup>
                                         ))}
-                                    </SelectGroup>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                        control={form.control}
-                        name="duration"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className="font-semibold text-base">Duration (days)</FormLabel>
-                            <FormControl>
-                            <Input type="number" {...field} className="h-11 text-base"/>
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="budget"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className="font-semibold text-base">Budget (Total Trip)</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || undefined} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger className="h-11 text-base">
-                                <SelectValue placeholder="Select budget range" />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                {Object.entries(budgetRanges).map(([key, label]) => (
-                                     <SelectItem key={key} value={key} className="text-base">{label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                </div>
-                {itineraryType === 'custom' && (
-                  <>
-                    <FormField
-                      control={form.control}
-                      name="interests"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-semibold text-base">Your Interests</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="e.g., trekking in Annapurna, exploring ancient temples in Kathmandu, spotting wildlife in Chitwan..."
-                              className="min-h-[100px] text-base"
-                              {...field}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="duration"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="font-semibold text-base">Duration (days)</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" {...field} className="h-11 text-base"/>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
                             />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="endPoint"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
-                             <Select onValueChange={field.onChange} value={field.value || "none"} defaultValue={field.value || "none"}>
+                            <FormField
+                                control={form.control}
+                                name="budget"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="font-semibold text-base">Budget (Total Trip)</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || undefined} defaultValue={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger className="h-11 text-base">
+                                        <SelectValue placeholder="Select budget range" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {Object.entries(budgetRanges).map(([key, label]) => (
+                                            <SelectItem key={key} value={key} className="text-base">{label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+                        {itineraryType === 'custom' && (
+                        <>
+                            <FormField
+                            control={form.control}
+                            name="interests"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel className="font-semibold text-base">Your Interests</FormLabel>
                                 <FormControl>
-                                    <SelectTrigger className="h-11 text-base">
-                                        <SelectValue placeholder="Select ending district (optional)" />
-                                    </SelectTrigger>
+                                    <Textarea
+                                    placeholder="e.g., trekking in Annapurna, exploring ancient temples in Kathmandu, spotting wildlife in Chitwan..."
+                                    className="min-h-[100px] text-base"
+                                    {...field}
+                                    />
                                 </FormControl>
-                                <SelectContent>
-                                     <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
-                                    {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
-                                        <SelectGroup key={region}>
-                                            <SelectLabel className="font-bold">{region}</SelectLabel>
-                                            {districts.map(d => (
-                                                <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
-                                            ))}
-                                        </SelectGroup>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                     <FormField
-                      control={form.control}
-                      name="mustVisitPlaces"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="font-semibold text-base">Must-Visit Places/Regions (Optional)</FormLabel>
-                           <FormControl>
-                            <Textarea
-                              placeholder="List specific places or regions, e.g., Lumbini, Everest Base Camp region, Bardia..."
-                              className="min-h-[80px] text-base"
-                              {...field}
+                                <FormMessage />
+                                </FormItem>
+                            )}
                             />
-                          </FormControl>
-                           <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </>
-                )}
-                <Button type="submit" disabled={isLoading || isExporting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
-                  {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                  {isLoading ? "Generating..." : (itineraryType === 'custom' ? "Generate Custom Itinerary" : "Generate Random Adventure")}
-                  <Sparkles className="ml-2 h-5 w-5" />
-                </Button>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
+                            <FormField
+                                control={form.control}
+                                name="endPoint"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value || "none"} defaultValue={field.value || "none"}>
+                                        <FormControl>
+                                            <SelectTrigger className="h-11 text-base">
+                                                <SelectValue placeholder="Select ending district (optional)" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
+                                            {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
+                                                <SelectGroup key={region}>
+                                                    <SelectLabel className="font-bold">{region}</SelectLabel>
+                                                    {districts.map(d => (
+                                                        <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
+                                                    ))}
+                                                </SelectGroup>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                            control={form.control}
+                            name="mustVisitPlaces"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel className="font-semibold text-base">Must-Visit Places/Regions (Optional)</FormLabel>
+                                <FormControl>
+                                    <Textarea
+                                    placeholder="List specific places or regions, e.g., Lumbini, Everest Base Camp region, Bardia..."
+                                    className="min-h-[80px] text-base"
+                                    {...field}
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                            />
+                        </>
+                        )}
+                        <Button type="submit" disabled={isLoading || isExporting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
+                        {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                        {isLoading ? "Generating..." : (itineraryType === 'custom' ? "Generate Custom Itinerary" : "Generate Random Adventure")}
+                        <Sparkles className="ml-2 h-5 w-5" />
+                        </Button>
+                    </form>
+                    </Form>
+                </CardContent>
+            </Card>
+
+            {/* Modification Section - MOVED HERE */}
+            {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
+                <Card className="shadow-xl border">
+                    <CardHeader className="bg-muted/50 p-6">
+                        <CardTitle className="text-xl flex items-center gap-2 text-primary">
+                            <MessageSquarePlus className="h-7 w-7"/> Want to Change Something?
+                        </CardTitle>
+                        <CardDescription className="text-base mt-1">
+                            Suggest modifications to your itinerary below (e.g., "Spend one more day in Pokhara", "I prefer hiking over city tours on day 2").
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        <Form {...modificationForm}>
+                            <form onSubmit={modificationForm.handleSubmit(handleModifyItinerary)} className="space-y-4">
+                                <FormField
+                                    control={modificationForm.control}
+                                    name="modificationRequest"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="font-semibold text-base">Your Modification Request</FormLabel>
+                                            <FormControl>
+                                                <Textarea
+                                                    placeholder="Tell us what you'd like to change..."
+                                                    className="min-h-[100px] text-base"
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <Button type="submit" disabled={isLoading || isExporting} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-3 h-auto">
+                                    {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Edit className="mr-2 h-5 w-5" />}
+                                    {isLoading ? "Applying Changes..." : "Apply Changes"}
+                                </Button>
+                            </form>
+                        </Form>
+                    </CardContent>
+                </Card>
+            )}
+        </div>
+
 
         <div className="lg:col-span-2">
           {isLoading && (
@@ -435,7 +480,7 @@ export function ItineraryPlanner() {
               <CardHeader className="bg-primary/5 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-2xl flex items-center gap-2 text-primary">
-                    <ListChecks className="h-8 w-8"/> Your {form.getValues('itineraryType') === 'custom' ? 'Custom' : 'Random'} Itinerary
+                    <ListChecks className="h-8 w-8"/> Your {originalFormValues?.itineraryType === 'custom' ? 'Custom' : 'Random'} Itinerary {/* Use originalFormValues here */}
                   </CardTitle>
                   <CardDescription className="text-base mt-1">Here's a day-by-day plan for your adventure in Nepal.</CardDescription>
                 </div>
@@ -448,7 +493,7 @@ export function ItineraryPlanner() {
                 <CardContent className="p-6 space-y-6">
                     <div className="p-4 border rounded-lg bg-muted/50 text-center hidden print:block">
                         <h3 className="text-lg font-semibold text-primary mb-2">VisitNepal Itinerary</h3>
-                        <p className="text-muted-foreground text-sm">Generated for {form.getValues('duration')} days, starting from {form.getValues('startPoint')}.</p>
+                        <p className="text-muted-foreground text-sm">Generated for {originalFormValues?.duration} days, starting from {originalFormValues?.startPoint}.</p> {/* Use originalFormValues here */}
                     </div>
                     {itinerary.itinerary.map((dayPlan, index) => (
                     <div key={index} className="relative pl-10 group">
@@ -496,45 +541,7 @@ export function ItineraryPlanner() {
                 </CardContent>
              </div>
             </Card>
-
-            {/* Modification Section */}
-            <Card className="shadow-xl border mt-8">
-                <CardHeader className="bg-muted/50 p-6">
-                    <CardTitle className="text-xl flex items-center gap-2 text-primary">
-                        <MessageSquarePlus className="h-7 w-7"/> Want to Change Something?
-                    </CardTitle>
-                    <CardDescription className="text-base mt-1">
-                        Suggest modifications to your itinerary below (e.g., "Spend one more day in Pokhara", "I prefer hiking over city tours on day 2").
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="p-6">
-                    <Form {...modificationForm}>
-                        <form onSubmit={modificationForm.handleSubmit(handleModifyItinerary)} className="space-y-4">
-                            <FormField
-                                control={modificationForm.control}
-                                name="modificationRequest"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="font-semibold text-base">Your Modification Request</FormLabel>
-                                        <FormControl>
-                                            <Textarea
-                                                placeholder="Tell us what you'd like to change..."
-                                                className="min-h-[100px] text-base"
-                                                {...field}
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
-                            <Button type="submit" disabled={isLoading || isExporting} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-3 h-auto">
-                                {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Edit className="mr-2 h-5 w-5" />}
-                                {isLoading ? "Applying Changes..." : "Apply Changes"}
-                            </Button>
-                        </form>
-                    </Form>
-                </CardContent>
-            </Card>
+            {/* Modification Section - REMOVED FROM HERE */}
             </>
           )}
           {itinerary && itinerary.itinerary.length === 0 && !isLoading && (
@@ -562,4 +569,3 @@ export function ItineraryPlanner() {
     </div>
   );
 }
-
