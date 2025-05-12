@@ -17,7 +17,7 @@ import { suggestHiddenGems, type SuggestHiddenGemsOutput } from '@/ai/flows/hidd
 import { getDistrictDetails, type GetDistrictDetailsOutput } from '@/ai/flows/get-district-details-flow'; // Import the new flow
 import { generateDistrictImage, type GenerateDistrictImageOutput } from '@/ai/flows/generate-district-image-flow'; // Import image generation flow
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, MapPin, Lightbulb, Building, Trees, Utensils, Sparkles, Info, Search, ImageOff } from 'lucide-react'; // Added ImageOff icon
+import { Loader2, MapPin, Lightbulb, Building, Trees, Utensils, Sparkles, Info, Search, ImageOff, Compass } from 'lucide-react'; // Added Compass icon
 import { useToast } from "@/hooks/use-toast";
 import { nepalDistricts, type DistrictName } from '@/types';
 import Image from 'next/image';
@@ -143,7 +143,7 @@ export function DistrictExplorer() {
         description: `AI suggestions for ${values.districtName} generated.`,
       });
     } catch (e) {
-      console.error(e);
+      console.error("Error fetching hidden gems:", e);
       const errorMessage = e instanceof Error ? e.message : "Could not fetch hidden gems.";
       setGemsError(`Failed to fetch hidden gems. ${errorMessage}`);
       toast({
@@ -155,6 +155,7 @@ export function DistrictExplorer() {
       setIsLoadingGems(false);
     }
   }, [toast]); // Add toast as dependency
+
 
   const handleDistrictChange = useCallback((district: DistrictName) => {
     setSelectedDistrict(district);
@@ -291,6 +292,7 @@ export function DistrictExplorer() {
                         fill
                         className="object-cover"
                         sizes="(max-width: 1024px) 100vw, 66vw"
+                        priority // Prioritize loading the main district image
                       />
                    ) : districtImageUrl === 'error' ? (
                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50 text-muted-foreground">
@@ -300,7 +302,7 @@ export function DistrictExplorer() {
                    ) : (
                        // Fallback or initial state before image loads (can be Skeleton if preferred, but should be covered by loading state above)
                        <div className="absolute inset-0 flex items-center justify-center bg-muted/30 text-muted-foreground">
-                         <Loader2 className="h-8 w-8 animate-spin" />
+                         <Skeleton className="h-full w-full" /> {/* Use skeleton as placeholder */}
                        </div>
                    )}
                    {/* Overlay for Text (only show if details are loaded) */}
@@ -315,7 +317,7 @@ export function DistrictExplorer() {
                  {isLoadingGems && (
                      <div className="flex items-center justify-center p-4 border rounded-lg bg-muted/50">
                         <Loader2 className="mr-2 h-5 w-5 animate-spin text-accent" />
-                        <p className="text-accent text-base">Searching for hidden gems...</p>
+                        <p className="text-accent text-base font-medium">AI is searching for hidden gems based on your preferences...</p>
                     </div>
                  )}
                 {hiddenGems && !isLoadingGems && (
@@ -326,16 +328,16 @@ export function DistrictExplorer() {
                             </h3>
                             <ul className="list-disc list-inside space-y-1 text-foreground/90 text-base">
                             {hiddenGems.hiddenGems.map((gem, index) => (
-                                <li key={index}>{gem}</li>
+                                <li key={index}>{gem}</li> // Gem now includes description
                             ))}
                             </ul>
                         </div>
                      ) : (
                         !gemsError && ( // Only show 'No gems found' if there wasn't an error fetching them
-                          <Alert>
+                          <Alert className="bg-muted/50">
                             <Info className="h-4 w-4" />
-                            <AlertTitle>No Specific Gems Found by AI</AlertTitle>
-                            <AlertDescription>AI couldn't find specific hidden gems based on the input. Explore the general attractions below.</AlertDescription>
+                            <AlertTitle>No Specific Gems Found</AlertTitle>
+                            <AlertDescription>AI couldn't find specific hidden gems based on the input, or none match your preferences. Explore the general attractions below!</AlertDescription>
                           </Alert>
                         )
                     )
@@ -394,7 +396,7 @@ export function DistrictExplorer() {
              !selectedDistrict && districtDetails !== 'loading' && !districtFetchError && (
                 <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
                 <CardHeader>
-                    <Search className="h-20 w-20 text-primary mx-auto mb-6" />
+                    <Compass className="h-20 w-20 text-primary mx-auto mb-6" />
                     <CardTitle className="text-3xl">Select a District to Begin</CardTitle>
                 </CardHeader>
                 <CardContent>
