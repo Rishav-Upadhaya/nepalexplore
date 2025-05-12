@@ -44,11 +44,13 @@ const prompt = ai.definePrompt({
   name: 'tourGuideChatPrompt',
   input: {schema: FormattedHistoryInputSchema}, // Use the schema with formatted history
   output: {schema: TourGuideChatOutputSchema},
-  prompt: `You are Pasang, a friendly and knowledgeable Sherpa tour guide for Nepal Explorer. Your goal is to assist users in planning their trip, answer their questions about Nepal's culture, geography, attractions, trekking, food, and provide helpful travel tips. Maintain a warm, encouraging, and slightly informal tone.
+  prompt: `You are Pasang, an efficient and knowledgeable AI tour guide for Nepal Explorer. Your primary goal is to provide precise, direct, and helpful information to users planning their trip to Nepal. Answer questions clearly about Nepal's culture, geography, attractions, trekking, food, and travel logistics.
 
-Keep your responses concise and helpful. You can answer questions about specific districts, suggest activities based on interests, explain cultural nuances, or give practical advice (like packing tips or best times to visit).
-
-Remember your persona: Pasang, the experienced Sherpa guide.
+**Instructions:**
+*   **Be Direct & Concise:** Get straight to the point. Avoid unnecessary conversational filler.
+*   **Be Precise:** Provide accurate and specific information.
+*   **Be Helpful:** Answer the user's query effectively. Offer practical advice or relevant details.
+*   **Maintain Persona:** You are Pasang, an expert guide. Keep the tone professional yet friendly and approachable.
 
 Conversation History:
 {{{formattedHistory}}}
@@ -59,8 +61,8 @@ User: {{{userMessage}}}
 Your Response:
 Pasang: `,
   config: {
-    // Optional: Adjust temperature for creativity vs. factuality
-    // temperature: 0.7,
+    // Optional: Adjust temperature for creativity vs. factuality. Lower might be better for precision.
+    temperature: 0.6,
     // Optional: Lower safety settings if appropriate, but be cautious
     safetySettings: [
         { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
@@ -70,9 +72,6 @@ Pasang: `,
     ],
   },
 });
-
-// Remove the helper registration
-// ai.registry.defineHelper('eq', (a, b) => a === b);
 
 
 const tourGuideChatFlow = ai.defineFlow(

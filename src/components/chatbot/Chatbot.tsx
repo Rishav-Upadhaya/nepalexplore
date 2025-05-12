@@ -19,7 +19,8 @@ interface Message {
 export function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'model', content: 'Namaste! I\'m Pasang, your virtual Sherpa guide. How can I help you plan your Nepal adventure today?' }
+    // Updated initial message
+    { role: 'model', content: 'Namaste! I\'m Pasang, your AI guide for Nepal. How can I assist you with your travel plans today?' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -28,13 +29,15 @@ export function Chatbot() {
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
+    const viewport = scrollAreaRef.current?.querySelector('div[data-radix-scroll-area-viewport]');
+    if (viewport) {
+      viewport.scrollTo({
+        top: viewport.scrollHeight,
         behavior: 'smooth'
       });
     }
   }, [messages]);
+
 
   const handleSendMessage = useCallback(async () => {
     if (!input.trim()) return;
@@ -86,11 +89,11 @@ export function Chatbot() {
       <SheetContent side="right" className="w-[90vw] max-w-md p-0 flex flex-col">
         <SheetHeader className="p-4 border-b bg-muted/50">
           <SheetTitle className="flex items-center gap-2 text-lg">
-            <Bot className="h-6 w-6 text-primary" /> Virtual Tour Guide (Pasang)
+            <Bot className="h-6 w-6 text-primary" /> AI Tour Guide (Pasang)
           </SheetTitle>
         </SheetHeader>
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
-          <div className="space-y-4">
+          <div className="space-y-4 pb-4"> {/* Add padding-bottom */}
             {messages.map((message, index) => (
               <div
                 key={index}
@@ -133,7 +136,7 @@ export function Chatbot() {
             )}
           </div>
         </ScrollArea>
-        <SheetFooter className="p-4 border-t bg-muted/50">
+        <SheetFooter className="p-4 border-t bg-muted/50 mt-auto"> {/* Ensure footer is at the bottom */}
           <div className="flex items-center gap-2 w-full">
             <Input
               type="text"
@@ -143,8 +146,9 @@ export function Chatbot() {
               onKeyPress={handleKeyPress}
               disabled={isLoading}
               className="flex-1 h-11 text-base"
+              aria-label="Chat input"
             />
-            <Button onClick={handleSendMessage} disabled={isLoading || !input.trim()} className="h-11">
+            <Button onClick={handleSendMessage} disabled={isLoading || !input.trim()} className="h-11" aria-label="Send message">
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
               <span className="sr-only">Send</span>
             </Button>
