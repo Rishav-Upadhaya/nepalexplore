@@ -8,78 +8,79 @@ body {
 
 @layer base {
   :root {
-    --background: 30 50% 95%; /* Light Beige/Sand */
-    --foreground: 30 20% 20%; /* Dark Brown/Grey */
-    --card: 30 40% 98%; /* Slightly off-white/light beige */
-    --card-foreground: 30 20% 20%;
-    --popover: 30 40% 98%;
-    --popover-foreground: 30 20% 20%;
-    --primary: 45 90% 59%; /* Saffron */
-    --primary-foreground: 45 90% 10%; /* Dark for Saffron */
-    --secondary: 147 50% 36%; /* Deep Green */
-    --secondary-foreground: 147 50% 95%; /* Light for Green */
-    --muted: 30 40% 90%; /* Lighter earthy tone */
-    --muted-foreground: 30 20% 40%;
-    --accent: 207 44% 49%; /* Deep Blue */
-    --accent-foreground: 207 44% 95%; /* Light for Blue */
+    --background: 80 60% 96%; /* Very Light Green/Beige */
+    --foreground: 90 25% 20%; /* Dark Desaturated Green/Brown */
+    --card: 80 50% 98%; /* Slightly off-white, or same as background for bordered cards */
+    --card-foreground: 90 25% 20%;
+    --popover: 80 50% 98%;
+    --popover-foreground: 90 25% 20%;
+    --primary: 90 40% 38%; /* Darker Green for primary actions/text */
+    --primary-foreground: 80 50% 98%; /* Light color for text on primary */
+    --secondary: 90 30% 55%; /* Muted Green for secondary elements */
+    --secondary-foreground: 90 25% 15%; /* Dark for text on secondary */
+    --muted: 80 40% 90%; /* Lighter green/beige */
+    --muted-foreground: 90 25% 40%; /* Muted text color */
+    --accent: 40 90% 60%; /* Warm Yellow/Orange for accents */
+    --accent-foreground: 40 90% 10%; /* Dark for text on accent */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 30 30% 85%;
-    --input: 30 30% 88%;
-    --ring: 45 90% 59%; /* Saffron for ring */
+    --border: 80 30% 85%; /* Border color */
+    --input: 80 30% 90%; /* Input background */
+    --ring: 40 90% 60%; /* Accent color for rings */
     --radius: 0.5rem;
 
-    --chart-1: 45 90% 59%; /* Saffron */
-    --chart-2: 147 50% 36%; /* Deep Green */
-    --chart-3: 207 44% 49%; /* Deep Blue */
-    --chart-4: 30 70% 60%; /* Earthy Orange */
-    --chart-5: 120 30% 50%; /* Muted Green */
+    --chart-1: 90 40% 38%; 
+    --chart-2: 140 40% 45%; 
+    --chart-3: 40 90% 60%;
+    --chart-4: 200 50% 50%;
+    --chart-5: 30 60% 60%;
 
-    --sidebar-background: 30 50% 92%; /* Slightly darker than main background */
-    --sidebar-foreground: 30 20% 20%;
-    --sidebar-primary: 45 90% 59%; /* Saffron */
-    --sidebar-primary-foreground: 45 90% 10%;
-    --sidebar-accent: 207 44% 49%; /* Deep Blue */
-    --sidebar-accent-foreground: 207 44% 95%;
-    --sidebar-border: 30 30% 80%;
-    --sidebar-ring: 45 90% 59%; /* Saffron */
+    --sidebar-background: 80 50% 92%; 
+    --sidebar-foreground: 90 25% 20%;
+    --sidebar-primary: 90 40% 38%;
+    --sidebar-primary-foreground: 80 50% 98%;
+    --sidebar-accent: 40 90% 60%;
+    --sidebar-accent-foreground: 40 90% 10%;
+    --sidebar-border: 80 30% 80%;
+    --sidebar-ring: 40 90% 60%;
   }
 
   .dark {
-    --background: 30 10% 10%; /* Dark Earthy Brown */
-    --foreground: 30 30% 85%; /* Light Earthy/Grey */
-    --card: 30 10% 15%;
-    --card-foreground: 30 30% 85%;
-    --popover: 30 10% 15%;
-    --popover-foreground: 30 30% 85%;
-    --primary: 45 90% 59%; /* Saffron */
-    --primary-foreground: 45 90% 10%;
-    --secondary: 147 50% 40%; /* Slightly lighter Deep Green for dark mode */
-    --secondary-foreground: 147 50% 95%;
-    --muted: 30 10% 25%;
-    --muted-foreground: 30 30% 70%;
-    --accent: 207 44% 55%; /* Slightly lighter Deep Blue for dark mode */
-    --accent-foreground: 207 44% 10%;
+    /* For future dark mode - keeping somewhat earthy tones but darker */
+    --background: 90 10% 10%; 
+    --foreground: 80 30% 85%; 
+    --card: 90 10% 15%;
+    --card-foreground: 80 30% 85%;
+    --popover: 90 10% 15%;
+    --popover-foreground: 80 30% 85%;
+    --primary: 90 45% 48%; /* Slightly brighter green for dark mode */
+    --primary-foreground: 80 50% 98%;
+    --secondary: 90 25% 45%; 
+    --secondary-foreground: 80 50% 95%;
+    --muted: 90 10% 25%;
+    --muted-foreground: 80 30% 70%;
+    --accent: 40 80% 65%; /* Brighter Yellow/Orange */
+    --accent-foreground: 40 90% 10%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 30 10% 30%;
-    --input: 30 10% 30%;
-    --ring: 45 90% 59%; /* Saffron for ring */
+    --border: 90 10% 30%;
+    --input: 90 10% 30%;
+    --ring: 40 80% 65%;
 
-    --chart-1: 45 80% 65%; /* Brighter Saffron for dark */
-    --chart-2: 147 45% 45%; /* Brighter Deep Green for dark */
-    --chart-3: 207 40% 55%; /* Brighter Deep Blue for dark */
-    --chart-4: 30 60% 65%; /* Brighter Earthy Orange for dark */
-    --chart-5: 120 25% 55%; /* Brighter Muted Green for dark */
+    --chart-1: 90 45% 48%;
+    --chart-2: 140 40% 55%;
+    --chart-3: 40 80% 65%;
+    --chart-4: 200 50% 60%;
+    --chart-5: 30 60% 70%;
 
-    --sidebar-background: 30 10% 12%; /* Slightly darker than dark background */
-    --sidebar-foreground: 30 30% 85%;
-    --sidebar-primary: 45 90% 59%; /* Saffron */
-    --sidebar-primary-foreground: 45 90% 10%;
-    --sidebar-accent: 207 44% 55%; /* Deep Blue */
-    --sidebar-accent-foreground: 207 44% 10%;
-    --sidebar-border: 30 10% 25%;
-    --sidebar-ring: 45 90% 59%; /* Saffron */
+    --sidebar-background: 90 10% 12%; 
+    --sidebar-foreground: 80 30% 85%;
+    --sidebar-primary: 90 45% 48%;
+    --sidebar-primary-foreground: 80 50% 98%;
+    --sidebar-accent: 40 80% 65%;
+    --sidebar-accent-foreground: 40 90% 10%;
+    --sidebar-border: 90 10% 25%;
+    --sidebar-ring: 40 80% 65%;
   }
 }
 

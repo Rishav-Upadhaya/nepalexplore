@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Nepal Explorer',
-  description: 'Explore the wonders of Nepal with AI-powered insights and planning tools.',
+  title: 'Visit Nepal - Explore the Majestic Himalayas',
+  description: 'Plan your adventure to Nepal. Discover breathtaking landscapes, rich culture, and thrilling activities with our AI-powered travel guide.',
 };
 
 export default function RootLayout({

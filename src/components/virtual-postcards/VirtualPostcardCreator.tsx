@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { generateVirtualPostcard, type VirtualPostcardOutput } from '@/ai/flows/virtual-postcards';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, ImageIcon, MapPin, Sparkles, Share2, Edit3, Info } from 'lucide-react';
+import { Loader2, ImageIcon, MapPinIcon, Sparkles, Share2, Edit3, Info } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import Image from 'next/image';
 
@@ -61,6 +61,11 @@ export function VirtualPostcardCreator() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!imagePreview) {
       setError("Please upload an image.");
+      toast({
+        title: "Image Required",
+        description: "Please upload an image to create a postcard.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -69,7 +74,6 @@ export function VirtualPostcardCreator() {
     setPostcard(null);
 
     try {
-      // The imageDataUri already includes the 'data:<mimetype>;base64,' prefix from FileReader result
       const result = await generateVirtualPostcard({
         imageDataUri: imagePreview,
         location: values.location,
@@ -103,23 +107,23 @@ export function VirtualPostcardCreator() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
-        <Card className="lg:col-span-1 shadow-lg sticky top-20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Edit3 className="text-primary h-6 w-6" /> Postcard Details</CardTitle>
-            <CardDescription>Provide an image and some context.</CardDescription>
+        <Card className="lg:col-span-1 shadow-xl sticky top-24 border border-primary/20">
+          <CardHeader className="bg-primary/5 p-6">
+            <CardTitle className="flex items-center gap-2 text-primary"><Edit3 className="h-7 w-7" /> Postcard Details</CardTitle>
+            <CardDescription className="text-base">Provide an image and some context to generate a caption.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div>
-                <Label htmlFor="image">Upload Image</Label>
+                <Label htmlFor="image" className="font-semibold text-base">Upload Your Image</Label>
                 <Input
                   id="image"
                   type="file"
                   accept="image/*"
-                  className="mt-1 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                  className="mt-1 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent/10 file:text-accent hover:file:bg-accent/20 h-12 text-base"
                   {...form.register("image")}
                   onChange={(e) => {
-                    form.register("image").onChange(e); // RHF internal update
+                    form.register("image").onChange(e); 
                     handleImageChange(e);
                   }}
                 />
@@ -127,80 +131,89 @@ export function VirtualPostcardCreator() {
               </div>
 
               <div>
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location" className="font-semibold text-base">Location</Label>
                 <Input
                   id="location"
                   placeholder="e.g., Pokhara Lakeside, Annapurna Base Camp"
                   {...form.register("location")}
-                  className="mt-1"
+                  className="mt-1 h-11 text-base"
                 />
                 {form.formState.errors.location && <p className="text-sm text-destructive mt-1">{form.formState.errors.location.message}</p>}
               </div>
 
               <div>
-                <Label htmlFor="description">Description (Optional)</Label>
+                <Label htmlFor="description" className="font-semibold text-base">Description (Optional)</Label>
                 <Textarea
                   id="description"
                   placeholder="e.g., Beautiful sunrise, trekking with friends"
                   {...form.register("description")}
-                  className="mt-1"
+                  className="mt-1 text-base"
                 />
               </div>
-              <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={isLoading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
+                {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                 {isLoading ? "Generating..." : "Generate Caption"}
-                 <Sparkles className="ml-2 h-4 w-4" />
+                 <Sparkles className="ml-2 h-5 w-5" />
               </Button>
             </form>
           </CardContent>
         </Card>
 
         <div className="lg:col-span-2">
-          {error && (
+         {isLoading && (
+             <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
+              <Loader2 className="h-16 w-16 text-primary animate-spin mx-auto mb-6" />
+              <CardTitle className="text-2xl text-primary">Generating Postcard...</CardTitle>
+              <CardDescription className="text-lg mt-2">
+                Our AI is crafting the perfect caption for your image!
+              </CardDescription>
+            </Card>
+          )}
+          {error && !isLoading && (
             <Alert variant="destructive" className="mb-6">
               <AlertTitle>Error Generating Caption</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          {(imagePreview || postcard) && (
-            <Card className="shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-2xl">Your Virtual Postcard</CardTitle>
+          {(!isLoading && (imagePreview || postcard)) && (
+            <Card className="shadow-xl border">
+              <CardHeader className="bg-primary/5 p-6">
+                <CardTitle className="text-2xl text-primary">Your Virtual Postcard Preview</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="p-6 space-y-6">
                 {imagePreview && (
-                  <div className="relative aspect-video w-full max-w-2xl mx-auto rounded-lg overflow-hidden border shadow-inner">
+                  <div className="relative aspect-video w-full max-w-2xl mx-auto rounded-lg overflow-hidden border-2 border-muted shadow-inner">
                     <Image src={imagePreview} alt="Uploaded postcard image" layout="fill" objectFit="contain" />
                   </div>
                 )}
                 {postcard && postcard.caption && (
-                  <div className="p-6 border rounded-lg bg-primary/5">
-                    <h3 className="text-xl font-semibold text-primary mb-2 flex items-center gap-2">
-                      <Sparkles className="h-5 w-5" /> AI-Generated Caption:
+                  <div className="p-6 border rounded-lg bg-accent/10 border-accent/30">
+                    <h3 className="text-xl font-semibold text-accent mb-2 flex items-center gap-2">
+                      <Sparkles className="h-6 w-6" /> AI-Generated Caption:
                     </h3>
                     <p className="text-lg text-foreground/90 whitespace-pre-line">{postcard.caption}</p>
                   </div>
                 )}
-                 {postcard && !postcard.caption && (
+                 {postcard && !postcard.caption && !error && ( // Show this if AI returns empty caption
                   <Alert>
                      <Info className="h-4 w-4" />
                     <AlertTitle>Caption Not Generated</AlertTitle>
-                    <AlertDescription>The AI could not generate a caption for this image. Please try a different image or description.</AlertDescription>
+                    <AlertDescription>The AI could not generate a caption for this image. Please try a different image or add more description.</AlertDescription>
                   </Alert>
                 )}
               </CardContent>
               {postcard && postcard.caption && (
-                <CardFooter className="flex justify-end">
-                  <Button variant="secondary">
-                    <Share2 className="mr-2 h-4 w-4" /> Share Postcard
+                <CardFooter className="flex justify-end p-6 bg-muted/20 border-t">
+                  <Button variant="default" className="text-lg py-2.5 h-auto bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Share2 className="mr-2 h-5 w-5" /> Share Postcard
                   </Button>
                 </CardFooter>
               )}
             </Card>
           )}
            {!isLoading && !imagePreview && !error && (
-             <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30">
+             <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
               <CardHeader>
                 <ImageIcon className="h-16 w-16 text-primary mx-auto mb-4" />
                 <CardTitle className="text-2xl">Create Your Postcard</CardTitle>

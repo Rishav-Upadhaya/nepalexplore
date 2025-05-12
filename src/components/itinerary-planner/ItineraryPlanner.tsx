@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { aiItineraryTool, type AiItineraryToolOutput } from '@/ai/flows/ai-itinerary-tool';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Route, CalendarDays, DollarSign, MapPin, Sparkles, ListChecks, Info } from 'lucide-react';
+import { Loader2, Route, CalendarDays, DollarSign, MapPinIcon, Sparkles, ListChecks, Info, FileText } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 
@@ -73,45 +73,45 @@ export function ItineraryPlanner() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
-        <Card className="lg:col-span-1 shadow-lg sticky top-20">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Route className="text-primary h-6 w-6" /> Plan Your Dream Trip</CardTitle>
-            <CardDescription>Fill in your preferences below to get a custom itinerary.</CardDescription>
+        <Card className="lg:col-span-1 shadow-xl sticky top-24 border border-primary/20">
+          <CardHeader className="bg-primary/5 p-6">
+            <CardTitle className="flex items-center gap-2 text-primary"><Route className="h-7 w-7" /> Plan Your Dream Trip</CardTitle>
+            <CardDescription className="text-base">Fill in your preferences below to get a custom itinerary.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div>
-                <Label htmlFor="interests">Interests</Label>
+                <Label htmlFor="interests" className="font-semibold text-base">Your Interests</Label>
                 <Textarea
                   id="interests"
                   placeholder="e.g., trekking, culture, wildlife, spiritual experiences, photography..."
                   {...form.register("interests")}
-                  className="mt-1 min-h-[100px]"
+                  className="mt-1 min-h-[100px] text-base"
                 />
                 {form.formState.errors.interests && <p className="text-sm text-destructive mt-1">{form.formState.errors.interests.message}</p>}
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="duration">Duration (days)</Label>
+                  <Label htmlFor="duration" className="font-semibold text-base">Duration (days)</Label>
                   <Input
                     id="duration"
                     type="number"
                     {...form.register("duration")}
-                    className="mt-1"
+                    className="mt-1 h-11 text-base"
                   />
                   {form.formState.errors.duration && <p className="text-sm text-destructive mt-1">{form.formState.errors.duration.message}</p>}
                 </div>
                  <div>
-                  <Label htmlFor="budget">Budget</Label>
+                  <Label htmlFor="budget" className="font-semibold text-base">Budget</Label>
                   <Select onValueChange={(value) => form.setValue("budget", value as "low" | "medium" | "high")} defaultValue={form.getValues("budget")}>
-                    <SelectTrigger id="budget" className="mt-1">
+                    <SelectTrigger id="budget" className="mt-1 h-11 text-base">
                       <SelectValue placeholder="Select budget" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="low" className="text-base">Low</SelectItem>
+                      <SelectItem value="medium" className="text-base">Medium</SelectItem>
+                      <SelectItem value="high" className="text-base">High</SelectItem>
                     </SelectContent>
                   </Select>
                   {form.formState.errors.budget && <p className="text-sm text-destructive mt-1">{form.formState.errors.budget.message}</p>}
@@ -119,70 +119,80 @@ export function ItineraryPlanner() {
               </div>
 
               <div>
-                <Label htmlFor="startPoint">Starting Point</Label>
+                <Label htmlFor="startPoint" className="font-semibold text-base">Starting Point</Label>
                 <Input
                   id="startPoint"
                   placeholder="e.g., Kathmandu, Pokhara"
                   {...form.register("startPoint")}
-                  className="mt-1"
+                  className="mt-1 h-11 text-base"
                 />
                 {form.formState.errors.startPoint && <p className="text-sm text-destructive mt-1">{form.formState.errors.startPoint.message}</p>}
               </div>
 
-              <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" disabled={isLoading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
+                {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                 {isLoading ? "Generating..." : "Generate Itinerary"}
-                <Sparkles className="ml-2 h-4 w-4" />
+                <Sparkles className="ml-2 h-5 w-5" />
               </Button>
             </form>
           </CardContent>
         </Card>
 
         <div className="lg:col-span-2">
-          {error && (
+          {isLoading && (
+             <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
+              <Loader2 className="h-16 w-16 text-primary animate-spin mx-auto mb-6" />
+              <CardTitle className="text-2xl text-primary">Generating Your Itinerary...</CardTitle>
+              <CardDescription className="text-lg mt-2">
+                Please wait while our AI crafts your personalized adventure!
+              </CardDescription>
+            </Card>
+          )}
+          {error && !isLoading && (
             <Alert variant="destructive" className="mb-6">
               <AlertTitle>Error Generating Itinerary</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          {itinerary && itinerary.itinerary.length > 0 && (
-            <Card className="shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-2xl flex items-center gap-2"><ListChecks className="text-primary h-7 w-7"/> Your Custom Itinerary</CardTitle>
-                <CardDescription>Here's a day-by-day plan for your adventure in Nepal.</CardDescription>
+          {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
+            <Card className="shadow-xl border">
+              <CardHeader className="bg-primary/5 p-6">
+                <CardTitle className="text-2xl flex items-center gap-2 text-primary"><ListChecks className="h-8 w-8"/> Your Custom Itinerary</CardTitle>
+                <CardDescription className="text-base">Here's a day-by-day plan for your adventure in Nepal.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="p-6 space-y-6">
                 {itinerary.itinerary.map((dayPlan, index) => (
-                  <div key={index} className="relative pl-8 group">
-                     <span className="absolute left-0 top-1 flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-sm">
+                  <div key={index} className="relative pl-10 group">
+                     <span className="absolute left-0 top-1 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg shadow">
                        {dayPlan.day}
                      </span>
-                     {index < itinerary.itinerary.length -1 && <div className="absolute left-4 top-10 bottom-0 w-0.5 bg-border group-last:hidden" />}
-                    <Card className="ml-4 bg-card border-l-4 border-primary shadow-md hover:shadow-lg transition-shadow">
-                      <CardHeader>
+                     {index < itinerary.itinerary.length -1 && <div className="absolute left-[19px] top-12 bottom-0 w-0.5 bg-border group-last:hidden" />}
+                    <Card className="ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow">
+                      <CardHeader className="p-4">
                         <CardTitle className="text-xl flex items-center gap-2">
-                          <MapPin className="h-5 w-5 text-secondary" /> {dayPlan.location}
+                          <MapPinIcon className="h-6 w-6 text-accent" /> {dayPlan.location}
                         </CardTitle>
-                         <p className="text-sm text-muted-foreground">Day {dayPlan.day}</p>
+                         <p className="text-sm text-muted-foreground font-medium">Day {dayPlan.day}</p>
                       </CardHeader>
-                      <CardContent>
-                        <h4 className="font-semibold mb-1 text-foreground/90">Activities:</h4>
-                        <p className="text-muted-foreground whitespace-pre-line">{dayPlan.activities}</p>
+                      <CardContent className="p-4 pt-0">
+                        <h4 className="font-semibold mb-1 text-foreground/90 text-base">Activities:</h4>
+                        <p className="text-muted-foreground whitespace-pre-line text-base">{dayPlan.activities}</p>
                       </CardContent>
                     </Card>
                   </div>
                 ))}
-                 <Separator className="my-6" />
+                 <Separator className="my-8" />
                 <div className="text-center">
-                  <Button variant="outline">
+                  <Button variant="outline" className="text-lg py-3 h-auto border-primary text-primary hover:bg-primary/10">
+                    <FileText className="mr-2 h-5 w-5" />
                     Export Itinerary (PDF)
                   </Button>
                 </div>
               </CardContent>
             </Card>
           )}
-          {itinerary && itinerary.itinerary.length === 0 && (
+          {itinerary && itinerary.itinerary.length === 0 && !isLoading && (
              <Alert>
                 <Info className="h-4 w-4" />
                 <AlertTitle>Itinerary Could Not Be Generated</AlertTitle>
@@ -190,7 +200,7 @@ export function ItineraryPlanner() {
               </Alert>
           )}
           {!isLoading && !itinerary && !error && (
-             <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30">
+             <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
               <CardHeader>
                 <Route className="h-16 w-16 text-primary mx-auto mb-4" />
                 <CardTitle className="text-2xl">Ready for an Adventure?</CardTitle>

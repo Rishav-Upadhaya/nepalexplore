@@ -1,93 +1,70 @@
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Palette, MountainSnowIcon, LeafIcon } from 'lucide-react'; // Using MountainSnowIcon for clarity as MountainSnow is used elsewhere
+import { Palette, MountainSnow, PawPrint } from 'lucide-react'; // Updated icons for better representation
 
 const categories = [
   {
-    value: "culture",
-    title: "Vibrant Culture",
+    title: "Rich Culture & Heritage",
     icon: Palette,
-    description: "Immerse yourself in ancient traditions, colorful festivals, and sacred sites.",
-    items: [
-      { name: "Kathmandu Durbar Square", image: "https://picsum.photos/seed/culture1/400/300", hint: "Kathmandu temple" },
-      { name: "Pashupatinath Temple", image: "https://picsum.photos/seed/culture2/400/300", hint: "Hindu temple" },
-      { name: "Boudhanath Stupa", image: "https://picsum.photos/seed/culture3/400/300", hint: "Buddhist stupa" },
-    ]
+    description: "Discover ancient temples, vibrant festivals, and the warm hospitality of the Nepali people. Explore UNESCO World Heritage sites in Kathmandu Valley.",
+    image: "https://picsum.photos/seed/culture_nepal/600/400",
+    hint: "Nepal temple festival",
   },
   {
-    value: "adventure",
     title: "Thrilling Adventures",
-    icon: MountainSnowIcon,
-    description: "Conquer majestic peaks, raft wild rivers, and paraglide over stunning valleys.",
-    items: [
-      { name: "Everest Base Camp Trek", image: "https://picsum.photos/seed/adventure1/400/300", hint: "Everest mountain" },
-      { name: "Rafting in Trishuli River", image: "https://picsum.photos/seed/adventure2/400/300", hint: "river rafting" },
-      { name: "Paragliding in Pokhara", image: "https://picsum.photos/seed/adventure3/400/300", hint: "paragliding Pokhara" },
-    ]
+    icon: MountainSnow,
+    description: "Embark on world-class treks like Everest Base Camp and Annapurna Circuit, or try rafting, paragliding, and bungee jumping amidst stunning landscapes.",
+    image: "https://picsum.photos/seed/adventure_nepal/600/400",
+    hint: "Nepal trekking mountain",
   },
   {
-    value: "wildlife",
-    title: "Rich Wildlife",
-    icon: LeafIcon,
-    description: "Encounter rare species like one-horned rhinos and Bengal tigers in lush national parks.",
-    items: [
-      { name: "Chitwan National Park", image: "https://picsum.photos/seed/wildlife1/400/300", hint: "rhino wildlife" },
-      { name: "Bardia National Park", image: "https://picsum.photos/seed/wildlife2/400/300", hint: "tiger jungle" },
-      { name: "Red Panda Spotting", image: "https://picsum.photos/seed/wildlife3/400/300", hint: "red panda" },
-    ]
+    title: "Diverse Wildlife",
+    icon: PawPrint, // Using PawPrint for wildlife
+    description: "Explore national parks teeming with rare species like the Bengal tiger, one-horned rhinoceros, and elusive snow leopard. A paradise for nature lovers.",
+    image: "https://picsum.photos/seed/wildlife_nepal/600/400",
+    hint: "Nepal rhino tiger",
   }
 ];
 
 export function WhyNepal() {
   return (
-    <section className="py-16 md:py-24 bg-muted/50">
+    <section className="py-16 md:py-24 bg-muted/30">
       <div className="container">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Why Nepal?</h2>
+        <div className="text-center mb-12 md:mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-primary">Why Nepal?</h2>
+          {/* Optional subtitle if needed: 
           <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
             A land of breathtaking beauty, spiritual serenity, and unparalleled adventure.
-          </p>
+          </p> 
+          */}
         </div>
 
-        <Tabs defaultValue="culture" className="w-full">
-          <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 h-auto sm:h-12 mb-8">
-            {categories.map(category => (
-              <TabsTrigger key={category.value} value={category.value} className="py-2.5 text-base sm:text-sm">
-                <category.icon className="mr-2 h-5 w-5" /> {category.title}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {categories.map(category => (
-            <TabsContent key={category.value} value={category.value}>
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-semibold">{category.title}</h3>
-                <p className="mt-2 text-muted-foreground">{category.description}</p>
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {category.items.map(item => (
-                  <Card key={item.name} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-                    <CardHeader className="p-0">
-                       <div className="aspect-video relative">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          data-ai-hint={item.hint}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-4">
-                      <CardTitle className="text-lg">{item.name}</CardTitle>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
+        <div className="grid md:grid-cols-3 gap-8">
+          {categories.map((category) => (
+            <Card key={category.title} className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col bg-card">
+              <CardHeader className="p-0">
+                <div className="aspect-video relative w-full">
+                  <Image
+                    src={category.image}
+                    alt={category.title}
+                    data-ai-hint={category.hint}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 flex-grow flex flex-col">
+                <div className="flex items-center mb-3">
+                  <category.icon className="h-8 w-8 text-accent mr-3" />
+                  <CardTitle className="text-xl text-primary">{category.title}</CardTitle>
+                </div>
+                <CardDescription className="text-muted-foreground text-base">
+                  {category.description}
+                </CardDescription>
+              </CardContent>
+            </Card>
           ))}
-        </Tabs>
+        </div>
       </div>
     </section>
   );
