@@ -40,8 +40,8 @@ const generateDistrictImageFlow = ai.defineFlow(
             // IMPORTANT: ONLY the googleai/gemini-2.0-flash-exp model is able to generate images. You MUST use exactly this model to generate images.
             model: 'googleai/gemini-2.0-flash-exp',
 
-            // Simple prompt instructing the model to generate an image representative of the district
-            prompt: `Generate a realistic and appealing image representing the landscape or a famous landmark of the ${input.districtName} district in Nepal. Focus on natural beauty or cultural significance. Avoid text overlays on the image.`,
+            // Updated prompt for more specific and iconic imagery
+            prompt: `Generate a photorealistic image in a travel photography style, capturing the *most iconic* natural landscape or a famous cultural landmark strongly associated with the ${input.districtName} district in Nepal. Focus on creating a visually appealing and accurate representation suitable for a travel website. Avoid any text overlays or captions within the image itself.`,
 
             config: {
                 responseModalities: ['TEXT', 'IMAGE'], // MUST provide both TEXT and IMAGE, IMAGE only won't work
