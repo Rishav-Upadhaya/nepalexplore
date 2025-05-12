@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, useCallback } from 'react'; // Added useCallback
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -45,9 +46,25 @@ export function VirtualPostcardCreator() {
     },
   });
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = useCallback((event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Validate file type and size again here for immediate feedback
+      if (file.size > MAX_FILE_SIZE) {
+        form.setError("image", { type: "manual", message: `Max image size is 5MB.` });
+        setImagePreview(null);
+        event.target.value = ''; // Clear the input
+        return;
+      }
+      if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+         form.setError("image", { type: "manual", message: "Only .jpg, .jpeg, .png and .webp formats are supported." });
+         setImagePreview(null);
+         event.target.value = ''; // Clear the input
+         return;
+      }
+      // Clear previous error if validation passes
+      form.clearErrors("image");
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
@@ -56,14 +73,14 @@ export function VirtualPostcardCreator() {
     } else {
       setImagePreview(null);
     }
-  };
+  }, [form]); // Added form dependency
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
     if (!imagePreview) {
-      setError("Please upload an image.");
+      setError("Please upload and select a valid image.");
       toast({
         title: "Image Required",
-        description: "Please upload an image to create a postcard.",
+        description: "Please upload a valid image to create a postcard.",
         variant: "destructive",
       });
       return;
@@ -86,16 +103,21 @@ export function VirtualPostcardCreator() {
       });
     } catch (e) {
       console.error(e);
-      setError("Failed to generate postcard caption. Please try again.");
+      const errorMessage = e instanceof Error ? e.message : "Failed to generate postcard caption. Please try again.";
+      setError(errorMessage);
        toast({
         title: "Error",
-        description: "Could not generate postcard caption.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [imagePreview, toast]); // Add dependencies
+
+
+  // Get image file ref for the form register
+   const imageFileRef = form.register("image");
 
   return (
     <div className="container py-12 md:py-16">
@@ -107,6 +129,7 @@ export function VirtualPostcardCreator() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
+        {/* Form Sidebar */}
         <Card className="lg:col-span-1 shadow-xl sticky top-24 border border-primary/20">
           <CardHeader className="bg-primary/5 p-6">
             <CardTitle className="flex items-center gap-2 text-primary"><Edit3 className="h-7 w-7" /> Postcard Details</CardTitle>
@@ -119,12 +142,12 @@ export function VirtualPostcardCreator() {
                 <Input
                   id="image"
                   type="file"
-                  accept="image/*"
+                  accept={ACCEPTED_IMAGE_TYPES.join(",")} // Use defined types
                   className="mt-1 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-accent/10 file:text-accent hover:file:bg-accent/20 h-12 text-base"
-                  {...form.register("image")}
+                  {...imageFileRef} // Use the registered ref
                   onChange={(e) => {
-                    form.register("image").onChange(e); 
-                    handleImageChange(e);
+                    imageFileRef.onChange(e); // Call the original onChange from register
+                    handleImageChange(e); // Call our handler for preview and validation
                   }}
                 />
                 {form.formState.errors.image && <p className="text-sm text-destructive mt-1">{form.formState.errors.image.message as string}</p>}
@@ -150,7 +173,7 @@ export function VirtualPostcardCreator() {
                   className="mt-1 text-base"
                 />
               </div>
-              <Button type="submit" disabled={isLoading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
+              <Button type="submit" disabled={isLoading || !imagePreview || !form.formState.isValid} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
                 {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                 {isLoading ? "Generating..." : "Generate Caption"}
                  <Sparkles className="ml-2 h-5 w-5" />
@@ -159,6 +182,7 @@ export function VirtualPostcardCreator() {
           </CardContent>
         </Card>
 
+        {/* Preview Area */}
         <div className="lg:col-span-2">
          {isLoading && (
              <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
@@ -171,6 +195,7 @@ export function VirtualPostcardCreator() {
           )}
           {error && !isLoading && (
             <Alert variant="destructive" className="mb-6">
+              <Info className="h-4 w-4" />
               <AlertTitle>Error Generating Caption</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -183,8 +208,14 @@ export function VirtualPostcardCreator() {
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 {imagePreview && (
-                  <div className="relative aspect-video w-full max-w-2xl mx-auto rounded-lg overflow-hidden border-2 border-muted shadow-inner">
-                    <Image src={imagePreview} alt="Uploaded postcard image" layout="fill" objectFit="contain" />
+                  <div className="relative aspect-video w-full max-w-2xl mx-auto rounded-lg overflow-hidden border-2 border-muted shadow-inner bg-muted/20">
+                    <Image
+                        src={imagePreview}
+                        alt="Uploaded postcard image preview"
+                        layout="fill"
+                        objectFit="contain"
+                        sizes="(max-width: 1024px) 100vw, 66vw"
+                    />
                   </div>
                 )}
                 {postcard && postcard.caption && (
@@ -205,6 +236,7 @@ export function VirtualPostcardCreator() {
               </CardContent>
               {postcard && postcard.caption && (
                 <CardFooter className="flex justify-end p-6 bg-muted/20 border-t">
+                  {/* Add actual sharing logic later */}
                   <Button variant="default" className="text-lg py-2.5 h-auto bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Share2 className="mr-2 h-5 w-5" /> Share Postcard
                   </Button>

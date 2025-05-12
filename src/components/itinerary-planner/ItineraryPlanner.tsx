@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef } from 'react'; // Added useRef
+import { useState, useRef, useCallback } from 'react'; // Added useCallback
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -67,7 +67,7 @@ export function ItineraryPlanner() {
 
   const itineraryType = form.watch("itineraryType");
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     setError(null);
     setItinerary(null);
@@ -103,10 +103,10 @@ export function ItineraryPlanner() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [toast]); // Add toast as dependency
 
   // Function to handle PDF export
-  const handleExportPdf = async () => {
+  const handleExportPdf = useCallback(async () => {
     if (!itineraryRef.current) {
       console.error("Itinerary element not found for export.");
       toast({ title: "Export Error", description: "Could not find itinerary to export.", variant: "destructive" });
@@ -122,6 +122,8 @@ export function ItineraryPlanner() {
          useCORS: true, // Handle external images if any
          logging: false, // Reduce console noise
          backgroundColor: null, // Use element background
+         windowWidth: itineraryRef.current.scrollWidth, // Ensure full width is captured
+         windowHeight: itineraryRef.current.scrollHeight, // Ensure full height is captured
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
@@ -132,15 +134,26 @@ export function ItineraryPlanner() {
 
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
+      const imgProps= pdf.getImageProperties(imgData);
+      const imgWidth = imgProps.width;
+      const imgHeight = imgProps.height;
 
-      // Calculate the aspect ratio to fit the image within the PDF page
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      const imgX = (pdfWidth - imgWidth * ratio) / 2; // Center the image horizontally
-      const imgY = 10; // Add some margin from the top
+      // Calculate the aspect ratio to fit the image within the PDF page width
+      const ratio = pdfWidth / imgWidth;
+      const calculatedHeight = imgHeight * ratio;
+      let heightLeft = calculatedHeight;
+      let position = 15; // Top margin
 
-      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft >= 0) {
+          position = heightLeft - calculatedHeight + 15; // Adjust position for next page
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
+          heightLeft -= pdfHeight;
+      }
+
       pdf.save('nepal-itinerary.pdf');
 
        toast({ title: "Export Successful!", description: "Your itinerary has been saved as a PDF." });
@@ -150,7 +163,7 @@ export function ItineraryPlanner() {
     } finally {
       setIsExporting(false);
     }
-  };
+  }, [toast]); // Add toast as dependency
 
 
   return (
@@ -163,6 +176,7 @@ export function ItineraryPlanner() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
+        {/* Form Sidebar */}
         <Card className="lg:col-span-1 shadow-xl sticky top-24 border border-primary/20">
           <CardHeader className="bg-primary/5 p-6">
             <CardTitle className="flex items-center gap-2 text-primary"><Route className="h-7 w-7" /> Plan Your Trip</CardTitle>
@@ -300,14 +314,14 @@ export function ItineraryPlanner() {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
-                             <Select onValueChange={field.onChange} defaultValue={field.value || "none"}>
+                             <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
                                 <FormControl>
                                     <SelectTrigger className="h-11 text-base">
                                         <SelectValue placeholder="Select ending district (optional)" />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                     <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
+                                     <SelectItem value="" className="text-base italic">None (leave blank)</SelectItem>
                                     {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
                                         <SelectGroup key={region}>
                                             <SelectLabel className="font-bold">{region}</SelectLabel>
@@ -342,11 +356,7 @@ export function ItineraryPlanner() {
                   </>
                 )}
 
-                 {/* Random Specific Info/Fields (if any needed in future) */}
-                 {/* {itineraryType === 'random' && ( <p className="text-sm text-muted-foreground">Let AI choose the best route for you!</p> )} */}
-
-
-                <Button type="submit" disabled={isLoading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
+                <Button type="submit" disabled={isLoading || isExporting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
                   {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                   {isLoading ? "Generating..." : (itineraryType === 'custom' ? "Generate Custom Itinerary" : "Generate Random Adventure")}
                   <Sparkles className="ml-2 h-5 w-5" />
@@ -369,6 +379,7 @@ export function ItineraryPlanner() {
           )}
           {error && !isLoading && (
             <Alert variant="destructive" className="mb-6">
+              <Info className="h-4 w-4" />
               <AlertTitle>Error Generating Itinerary</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -376,71 +387,76 @@ export function ItineraryPlanner() {
 
           {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
             <Card className="shadow-xl border">
-              <CardHeader className="bg-primary/5 p-6 flex flex-row items-center justify-between">
+              <CardHeader className="bg-primary/5 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-2xl flex items-center gap-2 text-primary">
                     <ListChecks className="h-8 w-8"/> Your {form.getValues('itineraryType') === 'custom' ? 'Custom' : 'Random'} Itinerary
                   </CardTitle>
                   <CardDescription className="text-base mt-1">Here's a day-by-day plan for your adventure in Nepal.</CardDescription>
                 </div>
-                <Button onClick={handleExportPdf} disabled={isExporting} variant="outline">
+                <Button onClick={handleExportPdf} disabled={isExporting || isLoading} variant="outline" className="w-full sm:w-auto">
                   {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   {isExporting ? "Exporting..." : "Export PDF"}
                 </Button>
               </CardHeader>
               {/* Add ref to the content that needs to be exported */}
-              <CardContent className="p-6 space-y-6" ref={itineraryRef}>
-                 {/* Timeline View Placeholder */}
-                 <div className="p-4 border rounded-lg bg-muted/50 text-center">
-                    <h3 className="text-lg font-semibold text-primary mb-2">Interactive Timeline View</h3>
-                    <p className="text-muted-foreground text-sm">(Coming Soon: Visualize your itinerary on an interactive timeline!)</p>
-                  </div>
-                {itinerary.itinerary.map((dayPlan, index) => (
-                   <div key={index} className="relative pl-10 group">
-                     <span className="absolute left-[-2px] top-1 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg shadow z-10">
-                       {dayPlan.day}
-                     </span>
-                     {/* Vertical line connecting days */}
-                     {index < itinerary.itinerary.length - 1 && (
-                        <div className="absolute left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden" />
-                     )}
-                    <Card className="ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow">
-                      <CardHeader className="p-4">
-                        <CardTitle className="text-xl flex items-center gap-2">
-                          <MapPinIcon className="h-6 w-6 text-accent" /> {dayPlan.location}
-                        </CardTitle>
-                         <p className="text-sm text-muted-foreground font-medium">Day {dayPlan.day}</p>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 space-y-3">
-                        <div>
-                            <h4 className="font-semibold mb-1.5 text-foreground/90 text-base">Activities:</h4>
-                            <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-base">
-                              {dayPlan.activities?.map((activity, actIndex) => (
-                                  <li key={actIndex}>{activity}</li>
-                              ))}
-                              {(!dayPlan.activities || dayPlan.activities.length === 0) && (
-                                   <li className="italic">No specific activities listed for today.</li>
-                              )}
-                            </ul>
-                        </div>
-                         {dayPlan.hotelRecommendations && dayPlan.hotelRecommendations.length > 0 && (
+              {/* Add a wrapper div specifically for PDF export content */}
+              <div ref={itineraryRef} className="bg-background"> {/* Ensure background for canvas */}
+                <CardContent className="p-6 space-y-6">
+                    {/* Timeline View Placeholder */}
+                    <div className="p-4 border rounded-lg bg-muted/50 text-center hidden print:block"> {/* Hide in normal view, show for print/PDF */}
+                        <h3 className="text-lg font-semibold text-primary mb-2">VisitNepal Itinerary</h3>
+                        <p className="text-muted-foreground text-sm">Generated for {form.getValues('duration')} days, starting from {form.getValues('startPoint')}.</p>
+                    </div>
+
+                    {/* Itinerary Days */}
+                    {itinerary.itinerary.map((dayPlan, index) => (
+                    <div key={index} className="relative pl-10 group">
+                        <span className="absolute left-[-2px] top-1 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg shadow z-10 print:bg-gray-700 print:text-white">
+                        {dayPlan.day}
+                        </span>
+                        {/* Vertical line connecting days */}
+                        {index < itinerary.itinerary.length - 1 && (
+                            <div className="absolute left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden print:bg-gray-300" />
+                        )}
+                        <Card className="ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow print:shadow-none print:border-l-2 print:border-gray-400 print:ml-4">
+                        <CardHeader className="p-4 print:p-3">
+                            <CardTitle className="text-xl flex items-center gap-2 print:text-lg">
+                            <MapPinIcon className="h-6 w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
+                            </CardTitle>
+                            <p className="text-sm text-muted-foreground font-medium print:text-xs">Day {dayPlan.day}</p>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0 space-y-3 print:p-3 print:pt-0 print:space-y-2">
                             <div>
-                                <Separator className="my-3" />
-                                <h4 className="font-semibold mb-1.5 text-foreground/90 text-base flex items-center gap-1.5">
-                                    <Hotel className="h-5 w-5 text-primary" /> Hotel Recommendations:
-                                </h4>
-                                <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-base">
-                                {dayPlan.hotelRecommendations.map((hotel, hotelIndex) => (
-                                    <li key={hotelIndex}>{hotel}</li>
+                                <h4 className="font-semibold mb-1.5 text-foreground/90 text-base print:text-sm print:mb-1">Activities:</h4>
+                                <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-base print:text-sm print:space-y-0.5">
+                                {dayPlan.activities?.map((activity, actIndex) => (
+                                    <li key={actIndex}>{activity}</li>
                                 ))}
+                                {(!dayPlan.activities || dayPlan.activities.length === 0) && (
+                                    <li className="italic">No specific activities listed for today.</li>
+                                )}
                                 </ul>
                             </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </div>
-                ))}
-              </CardContent>
+                            {dayPlan.hotelRecommendations && dayPlan.hotelRecommendations.length > 0 && (
+                                <div>
+                                    <Separator className="my-3 print:my-2" />
+                                    <h4 className="font-semibold mb-1.5 text-foreground/90 text-base flex items-center gap-1.5 print:text-sm print:mb-1">
+                                        <Hotel className="h-5 w-5 text-primary print:h-4 print:w-4 print:text-gray-700" /> Hotel Recommendations:
+                                    </h4>
+                                    <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-base print:text-sm print:space-y-0.5">
+                                    {dayPlan.hotelRecommendations.map((hotel, hotelIndex) => (
+                                        <li key={hotelIndex}>{hotel}</li>
+                                    ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </CardContent>
+                        </Card>
+                    </div>
+                    ))}
+                </CardContent>
+             </div>
             </Card>
           )}
           {itinerary && itinerary.itinerary.length === 0 && !isLoading && (
@@ -468,3 +484,4 @@ export function ItineraryPlanner() {
     </div>
   );
 }
+

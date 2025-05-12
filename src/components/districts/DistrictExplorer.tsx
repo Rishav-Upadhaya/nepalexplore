@@ -56,6 +56,8 @@ export function DistrictExplorer() {
   const fetchDistrictData = useCallback(async (districtName: DistrictName) => {
     setDistrictDetails('loading'); // Set state to loading
     setDistrictFetchError(null); // Clear previous errors
+    setHiddenGems(null); // Reset gems when district changes
+    setGemsError(null); // Reset gems error
     try {
       const result = await getDistrictDetails({ districtName });
       setDistrictDetails(result);
@@ -92,15 +94,14 @@ export function DistrictExplorer() {
       if (selectedDistrict && selectedDistrict !== initialDistrictFromUrl && (districtDetails === null || (districtDetails !== 'loading' && districtDetails?.name !== selectedDistrict))) {
           fetchDistrictData(selectedDistrict);
           form.setValue("districtName", selectedDistrict);
-          setHiddenGems(null); // Reset gems when district changes manually
-          setGemsError(null); // Reset gems error
+          // Resetting gems handled in fetchDistrictData now
       }
   // Only trigger for manual changes different from URL load or if details are missing/mismatched
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDistrict, initialDistrictFromUrl, fetchDistrictData]);
 
 
-  async function onSuggestGemsSubmit(values: z.infer<typeof formSchema>) {
+  const onSuggestGemsSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
     setIsLoadingGems(true);
     setGemsError(null); // Clear previous gems error
     setHiddenGems(null);
@@ -126,15 +127,15 @@ export function DistrictExplorer() {
     } finally {
       setIsLoadingGems(false);
     }
-  }
+  }, [toast]); // Add toast as dependency
 
-  const handleDistrictChange = (district: DistrictName) => {
+  const handleDistrictChange = useCallback((district: DistrictName) => {
     setSelectedDistrict(district);
     // Update URL without full page reload
     const currentParams = new URLSearchParams(window.location.search);
     currentParams.set('name', district);
     window.history.pushState({}, '', `${window.location.pathname}?${currentParams.toString()}`);
-  };
+  }, []); // No dependencies needed as it only uses setSelectedDistrict and browser APIs
 
   const districtImage = selectedDistrict ? `https://picsum.photos/seed/${selectedDistrict.replace(/\s+/g, '')}/1200/500` : "https://picsum.photos/1200/500";
   const districtImageHint = selectedDistrict ? `${selectedDistrict} landscape` : "Nepal landscape";
@@ -159,6 +160,7 @@ export function DistrictExplorer() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
+        {/* Sidebar */}
         <div className="lg:col-span-1 space-y-6 sticky top-24">
           <Card className="shadow-lg border border-primary/20">
             <CardHeader className="bg-primary/5">
@@ -198,7 +200,7 @@ export function DistrictExplorer() {
                       className="mt-1 text-base"
                     />
                   </div>
-                  <Button type="submit" disabled={isLoadingGems} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-base py-2.5 h-auto">
+                  <Button type="submit" disabled={isLoadingGems || districtDetails === 'loading'} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-base py-2.5 h-auto">
                     {isLoadingGems && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     {isLoadingGems ? "AI Searching..." : "Find Hidden Gems"}
                     <Sparkles className="ml-2 h-4 w-4" />
@@ -206,6 +208,7 @@ export function DistrictExplorer() {
                 </form>
                  {gemsError && (
                   <Alert variant="destructive" className="mt-4">
+                    <Info className="h-4 w-4" />
                     <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{gemsError}</AlertDescription>
                   </Alert>
@@ -215,7 +218,9 @@ export function DistrictExplorer() {
           )}
         </div>
 
+         {/* Main Content Area */}
         <div className="lg:col-span-2">
+          {/* Loading State */}
           {districtDetails === 'loading' && (
             <Card className="shadow-xl border">
                <CardHeader className="p-0">
@@ -234,6 +239,7 @@ export function DistrictExplorer() {
                </CardContent>
             </Card>
           )}
+          {/* Error State */}
            {districtFetchError && districtDetails !== 'loading' && (
              <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-destructive/10 border border-destructive">
                 <CardHeader>
@@ -243,17 +249,18 @@ export function DistrictExplorer() {
                 <CardContent>
                     <CardDescription className="text-lg text-destructive/90">{districtFetchError}</CardDescription>
                     <Button variant="outline" onClick={() => selectedDistrict && fetchDistrictData(selectedDistrict)} className="mt-6 border-destructive text-destructive hover:bg-destructive/10">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin hidden" /> {/* Keep loader logic if needed */}
+                      {/* Add loader if needed during retry */}
                       Try Again
                     </Button>
                 </CardContent>
             </Card>
            )}
 
-          {districtDetails && districtDetails !== 'loading' && !districtFetchError ? (
+          {/* Success State */}
+          {districtDetails && typeof districtDetails === 'object' && !districtFetchError ? (
             <Card className="shadow-xl border">
                <CardHeader className="p-0">
-                <div className="aspect-[1200/500] relative rounded-t-lg overflow-hidden">
+                <div className="aspect-[1200/500] relative rounded-t-lg overflow-hidden bg-muted"> {/* Added bg-muted for placeholder */}
                   <Image
                     src={districtImage}
                     alt={`Image of ${districtDetails.name}`}
@@ -261,11 +268,13 @@ export function DistrictExplorer() {
                     fill
                     className="object-cover"
                     priority={!initialDistrictFromUrl} // Load priority only if not coming from direct link initially
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 800px" // Add sizes prop
+                    sizes="(max-width: 1024px) 100vw, 66vw" // Updated sizes for better optimization
+                    unoptimized={!selectedDistrict} // Don't optimize the default placeholder
+                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/1200/500'; }} // Fallback image
                   />
-                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-8">
-                     <h2 className="text-4xl font-bold text-white drop-shadow-lg">{districtDetails.name}</h2>
-                     <p className="text-lg text-white/90 mt-1 drop-shadow-md">{districtDetails.tagline}</p>
+                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 md:p-8">
+                     <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">{districtDetails.name}</h2>
+                     <p className="text-md md:text-lg text-white/90 mt-1 drop-shadow-md">{districtDetails.tagline}</p>
                    </div>
                 </div>
               </CardHeader>
@@ -290,11 +299,13 @@ export function DistrictExplorer() {
                             </ul>
                         </div>
                      ) : (
-                        <Alert>
+                        !gemsError && ( // Only show 'No gems found' if there wasn't an error fetching them
+                          <Alert>
                             <Info className="h-4 w-4" />
                             <AlertTitle>No Specific Gems Found by AI</AlertTitle>
-                            <AlertDescription>AI couldn't find specific hidden gems based on the input. Try broadening your preferences or exploring general attractions below.</AlertDescription>
-                        </Alert>
+                            <AlertDescription>AI couldn't find specific hidden gems based on the input. Explore the general attractions below.</AlertDescription>
+                          </Alert>
+                        )
                     )
                 )}
 
@@ -319,7 +330,8 @@ export function DistrictExplorer() {
                        <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
                         {renderList(districtDetails.accommodations)}
                       </ul>
-                       <Button variant="link" className="p-0 h-auto text-base mt-2 text-accent hover:text-accent/80">View Booking Options</Button>
+                       {/* Consider adding a real booking link later */}
+                       {/* <Button variant="link" className="p-0 h-auto text-base mt-2 text-accent hover:text-accent/80">View Booking Options</Button> */}
                     </AccordionContent>
                   </AccordionItem>
                   <AccordionItem value="activities">
