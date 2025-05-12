@@ -88,8 +88,8 @@ Generate or modify a detailed day-by-day travel plan based on the user's request
 6.  **Maintain Overall Context (Modifications):** When modifying, try to keep the original duration and budget unless the modification request explicitly asks to change them. The modified itinerary should still make sense as a whole.
 7.  **Route Diversity:** For all itineraries, especially random ones, aim to create routes that avoid excessive backtracking or repetition of locations unless it's logically necessary (e.g., passing through a hub) or explicitly requested by the user in a modification. Showcase a variety of experiences and places.
 8.  **End Point Handling:**
-    *   **Custom:** If an `endPoint` is provided, the itinerary should conclude there. If not, it can end anywhere logical based on the route.
-    *   **Random:** If an `endPoint` is provided and it's different from `startPoint`, the itinerary should conclude at the specified `endPoint`. If no `endPoint` is provided, the itinerary MUST end back at the `startPoint`.
+    *   **Custom:** If an endPoint is provided, the itinerary should conclude there. If not, it can end anywhere logical based on the route.
+    *   **Random:** If an endPoint is provided and it's different from startPoint, the itinerary should conclude at the specified endPoint. If no endPoint is provided, the itinerary MUST end back at the startPoint.
 
 {{#if previousItinerary}}
 **MODIFICATION TASK**
@@ -143,7 +143,7 @@ Generate a personalized itinerary considering all these preferences. Ensure the 
 {{#if endPoint}}*   **Requested End Point:** {{{endPoint}}} {{else}}*   **Important:** No specific end point requested. The itinerary MUST end back at the starting point: {{{startPoint}}}.{{/if}}
 
 Generate a plausible and exciting random itinerary starting from {{startPoint}} for {{duration}} days, suitable for the specified total trip budget range: {{budget}}.
-*   **End Point Handling:** Adhere to Critical Instruction #8. If an `endPoint` is provided, conclude there. Otherwise, the trip must conclude at the **startPoint ({{{startPoint}}})**.
+*   **End Point Handling:** Adhere to Critical Instruction #8. If an endPoint is provided, conclude there. Otherwise, the trip must conclude at the **startPoint ({{{startPoint}}})**.
 *   Focus on a balanced mix of popular highlights BUT **actively include at least one or two lesser-known or different regions** accessible from the route to make it a true adventure (see critical instruction #1).
 *   For longer durations, aim for wider exploration across Nepal, always ensuring the correct end point based on the user's request.
 *   **Prioritize route diversity (Critical Instruction #7):** Avoid unnecessary repetition of locations or backtracking. Create a varied and interesting journey.
