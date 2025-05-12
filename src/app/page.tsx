@@ -1,7 +1,7 @@
 import { Hero } from '@/components/home/Hero';
 import { WhyNepal } from '@/components/home/WhyNepal';
 import { DiscoverDistrictsSection } from '@/components/home/DiscoverDistrictsSection';
-import { CtaItineraryPlannerSection } from '@/components/home/CtaItineraryPlannerSection';
+import { SustainabilitySection } from '@/components/home/SustainabilitySection'; // Import the new section
 
 export default function HomePage() {
   return (
@@ -9,7 +9,7 @@ export default function HomePage() {
       <Hero />
       <WhyNepal />
       <DiscoverDistrictsSection />
-      <CtaItineraryPlannerSection />
+      <SustainabilitySection /> {/* Add the sustainability section */}
     </>
   );
 }
