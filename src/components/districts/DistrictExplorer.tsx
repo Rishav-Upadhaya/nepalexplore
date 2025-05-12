@@ -11,7 +11,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Import SelectGroup and SelectLabel
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { suggestHiddenGems, type SuggestHiddenGemsOutput } from '@/ai/flows/hidden-gems-suggestions';
 import { getDistrictDetails, type GetDistrictDetailsOutput } from '@/ai/flows/get-district-details-flow'; // Import the new flow
@@ -19,7 +20,8 @@ import { generateDistrictImage, type GenerateDistrictImageOutput } from '@/ai/fl
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, MapPin, Lightbulb, Building, Trees, Utensils, Sparkles, Info, Search, ImageOff, Compass } from 'lucide-react'; // Added Compass icon
 import { useToast } from "@/hooks/use-toast";
-import { nepalDistricts, type DistrictName } from '@/types';
+// Import nepalDistrictsByRegion
+import { nepalDistricts, type DistrictName, nepalDistrictsByRegion } from '@/types';
 import Image from 'next/image';
 import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
 
@@ -193,6 +195,7 @@ export function DistrictExplorer() {
             </CardHeader>
             <CardContent className="p-6">
               <Label htmlFor="district-select" className="sr-only">Select a District</Label> {/* Added label for accessibility */}
+              {/* Updated Select component with grouped options */}
               <Select
                  onValueChange={(value) => handleDistrictChange(value as DistrictName)}
                  value={selectedDistrict || undefined}
@@ -202,8 +205,13 @@ export function DistrictExplorer() {
                   <SelectValue placeholder="Select a district" />
                 </SelectTrigger>
                 <SelectContent>
-                  {nepalDistricts.map(d => (
-                    <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
+                  {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
+                      <SelectGroup key={region}>
+                          <SelectLabel className="font-bold">{region}</SelectLabel>
+                          {districts.map(d => (
+                              <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
+                          ))}
+                      </SelectGroup>
                   ))}
                 </SelectContent>
               </Select>
