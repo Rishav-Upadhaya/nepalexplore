@@ -72,9 +72,16 @@ export async function aiItineraryTool(input: AiItineraryToolInput): Promise<AiIt
   return aiItineraryToolFlow(input);
 }
 
+// Define a schema for the prompt's input, including the derived `isCustom` flag.
+// Note: This schema is internal to the prompt definition and flow call.
+const PromptInputSchema = AiItineraryToolInputSchema.extend({
+    isCustom: z.boolean().optional().describe("Internal flag indicating if the type is 'custom'."),
+});
+
+
 const prompt = ai.definePrompt({
   name: 'aiItineraryToolPrompt',
-  input: {schema: AiItineraryToolInputSchema},
+  input: {schema: PromptInputSchema}, // Use the extended schema for the prompt
   output: {schema: AiItineraryToolOutputSchema},
   prompt: `You are a creative and knowledgeable travel expert specializing in crafting exciting itineraries for Nepal.
 Generate or modify a detailed day-by-day travel plan based on the user's request. The trip duration can be any number of days, there is no maximum limit.
@@ -120,7 +127,7 @@ Please carefully review the previous itinerary and the modification request. Upd
 {{else}}
 **NEW ITINERARY GENERATION TASK**
 
-{{#if (eq itineraryType "custom")}}
+{{#if isCustom}}
 **Itinerary Type:** Custom Plan
 
 **User Preferences:**
@@ -177,11 +184,12 @@ Example for one day in the "itinerary" array:
 const aiItineraryToolFlow = ai.defineFlow(
   {
     name: 'aiItineraryToolFlow',
-    inputSchema: AiItineraryToolInputSchema,
+    inputSchema: AiItineraryToolInputSchema, // Flow function still uses the original input schema
     outputSchema: AiItineraryToolOutputSchema,
   },
   async input => {
     let processedInput = { ...input };
+    const isCustom = input.itineraryType === 'custom'; // Determine if it's custom
 
     // General processing for optional fields and 'none'/'empty' values
     processedInput.endPoint = input.endPoint === "none" || input.endPoint === "" ? undefined : input.endPoint;
@@ -190,12 +198,12 @@ const aiItineraryToolFlow = ai.defineFlow(
 
     // Specific processing for NEW itineraries (not modifications)
     if (!input.previousItinerary) {
-        if (input.itineraryType === 'random') {
+        if (!isCustom) { // If it's random
             // For new random itineraries, ensure interests and mustVisitPlaces are undefined
             processedInput.interests = undefined;
             processedInput.mustVisitPlaces = undefined;
             // End point is handled by the prompt based on whether it's provided or not. No need to force it here.
-        } else if (input.itineraryType === 'custom') {
+        } else { // If it's custom
             // Nothing specific needed here anymore, general processing handles optional fields.
         }
     }
@@ -204,7 +212,11 @@ const aiItineraryToolFlow = ai.defineFlow(
     processedInput.previousItinerary = input.previousItinerary || undefined;
     processedInput.modificationRequest = input.modificationRequest || undefined;
 
-    const {output} = await prompt(processedInput);
+    // Call the prompt with the processed input AND the derived boolean flag
+    const {output} = await prompt({
+        ...processedInput,
+        isCustom: isCustom, // Add the boolean flag here
+    });
     return output!;
   }
 );
