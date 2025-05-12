@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react'; // Added useRef
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -13,12 +13,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { aiItineraryTool, type AiItineraryToolOutput } from '@/ai/flows/ai-itinerary-tool';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Route, CalendarDays, DollarSign, MapPinIcon, Sparkles, ListChecks, Info, FileText, Shuffle, Edit, Hotel } from 'lucide-react'; // Added Hotel icon
+import { Loader2, Route, CalendarDays, DollarSign, MapPinIcon, Sparkles, ListChecks, Info, FileText, Shuffle, Edit, Hotel, Download } from 'lucide-react'; // Added Download icon
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { nepalDistrictsByRegion, type DistrictName } from '@/types';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
 
 // Define schema for both types
 const formSchema = z.object({
@@ -44,7 +47,9 @@ const formSchema = z.object({
 export function ItineraryPlanner() {
   const [itinerary, setItinerary] = useState<AiItineraryToolOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false); // State for PDF export loading
   const [error, setError] = useState<string | null>(null);
+  const itineraryRef = useRef<HTMLDivElement>(null); // Ref for the itinerary container
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -99,6 +104,54 @@ export function ItineraryPlanner() {
       setIsLoading(false);
     }
   }
+
+  // Function to handle PDF export
+  const handleExportPdf = async () => {
+    if (!itineraryRef.current) {
+      console.error("Itinerary element not found for export.");
+      toast({ title: "Export Error", description: "Could not find itinerary to export.", variant: "destructive" });
+      return;
+    }
+
+    setIsExporting(true);
+    toast({ title: "Exporting PDF...", description: "Please wait." });
+
+    try {
+      const canvas = await html2canvas(itineraryRef.current, {
+         scale: 2, // Improve resolution
+         useCORS: true, // Handle external images if any
+         logging: false, // Reduce console noise
+         backgroundColor: null, // Use element background
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'pt', // points
+        format: 'a4', // standard A4 size
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+
+      // Calculate the aspect ratio to fit the image within the PDF page
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2; // Center the image horizontally
+      const imgY = 10; // Add some margin from the top
+
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.save('nepal-itinerary.pdf');
+
+       toast({ title: "Export Successful!", description: "Your itinerary has been saved as a PDF." });
+    } catch (error) {
+      console.error("Error exporting PDF:", error);
+      toast({ title: "Export Failed", description: "Could not generate the PDF. Please try again.", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
 
   return (
     <div className="container py-12 md:py-16">
@@ -323,13 +376,20 @@ export function ItineraryPlanner() {
 
           {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
             <Card className="shadow-xl border">
-              <CardHeader className="bg-primary/5 p-6">
-                <CardTitle className="text-2xl flex items-center gap-2 text-primary">
-                  <ListChecks className="h-8 w-8"/> Your {form.getValues('itineraryType') === 'custom' ? 'Custom' : 'Random'} Itinerary
-                </CardTitle>
-                <CardDescription className="text-base">Here's a day-by-day plan for your adventure in Nepal.</CardDescription>
+              <CardHeader className="bg-primary/5 p-6 flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl flex items-center gap-2 text-primary">
+                    <ListChecks className="h-8 w-8"/> Your {form.getValues('itineraryType') === 'custom' ? 'Custom' : 'Random'} Itinerary
+                  </CardTitle>
+                  <CardDescription className="text-base mt-1">Here's a day-by-day plan for your adventure in Nepal.</CardDescription>
+                </div>
+                <Button onClick={handleExportPdf} disabled={isExporting} variant="outline">
+                  {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                  {isExporting ? "Exporting..." : "Export PDF"}
+                </Button>
               </CardHeader>
-              <CardContent className="p-6 space-y-6">
+              {/* Add ref to the content that needs to be exported */}
+              <CardContent className="p-6 space-y-6" ref={itineraryRef}>
                  {/* Timeline View Placeholder */}
                  <div className="p-4 border rounded-lg bg-muted/50 text-center">
                     <h3 className="text-lg font-semibold text-primary mb-2">Interactive Timeline View</h3>
