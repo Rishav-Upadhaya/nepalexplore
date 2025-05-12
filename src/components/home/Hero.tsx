@@ -11,10 +11,10 @@ export function Hero() {
           Explore the Majestic Beauty of Nepal
         </h1>
         <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
-          Journey through breathtaking landscapes, ancient cultures, and thrilling adventures. Your unforgettable Himalayan experience starts here.
+          Journey through breathtaking landscapes, ancient cultures, and thrilling adventures. Your unforgettable Himalayan experience starts here. Plan your travel or tour to Nepal today!
         </p>
         <Button asChild size="lg" className="mt-10 bg-accent hover:bg-accent/90 text-accent-foreground shadow-lg px-10 py-6 text-lg">
-          <Link href="/plan-trip">
+          <Link href="/plan-trip" prefetch={true}>
             Plan Your Adventure
             <ArrowRight className="ml-2 h-5 w-5" />
           </Link>
@@ -27,7 +27,7 @@ export function Hero() {
            <Map className="h-16 w-16 text-primary mb-6 opacity-50" /> {/* Replaced MapChart with Map */}
            <h2 className="text-3xl md:text-4xl font-bold text-primary">Interactive Map of Nepal</h2>
            <p className="mt-3 text-muted-foreground max-w-xl">
-            (Coming Soon) Explore Nepal with our interactive map. Discover districts, landmarks, and points of interest with clickable hotspots and detailed information.
+            (Coming Soon) Explore Nepal with our interactive map. Discover districts, landmarks, and points of interest for your travel and tours with clickable hotspots and detailed information.
            </p>
             <div className="mt-4 text-sm text-muted-foreground/70">
                 [ Interactive Map Component Placeholder ]
@@ -35,7 +35,7 @@ export function Hero() {
              {/* Optional background image for visual context */}
              <Image
               src="https://picsum.photos/seed/nepalmap2d/1200/400"
-              alt="Map of Nepal background concept"
+              alt="Stylized 2D map of Nepal highlighting key regions for tourism and travel planning" // Enhanced alt text
               data-ai-hint="Nepal map background"
               fill
               className="object-cover opacity-10 group-hover:opacity-20 transition-opacity duration-500 -z-10"

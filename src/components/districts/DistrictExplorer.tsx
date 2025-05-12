@@ -179,7 +179,7 @@ export function DistrictExplorer() {
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold tracking-tight text-primary">Explore Nepal's Districts</h1>
         <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Discover unique attractions, accommodations, AI-powered local tips, and more for each of Nepal's 77 districts.
+          Discover unique attractions, accommodations, AI-powered local tips, and more for each of Nepal's 77 districts. Plan your Nepal travel and tours efficiently.
         </p>
       </div>
 
@@ -189,11 +189,16 @@ export function DistrictExplorer() {
           <Card className="shadow-lg border border-primary/20">
             <CardHeader className="bg-primary/5">
               <CardTitle className="flex items-center gap-2 text-primary"><Search className="h-6 w-6" /> Select a District</CardTitle>
-              <CardDescription className="text-base">Choose a district to see its details and get AI hidden gem suggestions.</CardDescription>
+              <CardDescription className="text-base">Choose a district to see its details and get AI hidden gem suggestions for your Nepal visit.</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
-              <Select onValueChange={(value) => handleDistrictChange(value as DistrictName)} value={selectedDistrict || undefined}>
-                <SelectTrigger className="h-12 text-base">
+              <Label htmlFor="district-select" className="sr-only">Select a District</Label> {/* Added label for accessibility */}
+              <Select
+                 onValueChange={(value) => handleDistrictChange(value as DistrictName)}
+                 value={selectedDistrict || undefined}
+                 name="district-select" // Added name attribute
+                >
+                <SelectTrigger className="h-12 text-base" id="district-select">
                   <SelectValue placeholder="Select a district" />
                 </SelectTrigger>
                 <SelectContent>
@@ -209,7 +214,7 @@ export function DistrictExplorer() {
             <Card className="shadow-lg border border-accent/20">
               <CardHeader className="bg-accent/5">
                 <CardTitle className="flex items-center gap-2 text-accent"><Lightbulb className="h-6 w-6" /> AI Hidden Gems</CardTitle>
-                <CardDescription className="text-base">Get AI-powered suggestions for {selectedDistrict}.</CardDescription>
+                <CardDescription className="text-base">Get AI-powered suggestions for {selectedDistrict} for your off-the-beaten-path tour.</CardDescription>
               </CardHeader>
               <CardContent className="p-6">
                 <form onSubmit={form.handleSubmit(onSuggestGemsSubmit)} className="space-y-4">
@@ -219,9 +224,10 @@ export function DistrictExplorer() {
                     <Label htmlFor="userPreferences" className="font-medium text-base">Your Preferences (Optional)</Label>
                     <Textarea
                       id="userPreferences"
-                      placeholder="e.g., interested in nature, history, food, offbeat trails..."
+                      placeholder="e.g., interested in nature, history, food, offbeat trails for my Nepal travel..."
                       {...form.register("userPreferences")}
                       className="mt-1 text-base"
+                      aria-label="Your preferences for hidden gems"
                     />
                   </div>
                   <Button type="submit" disabled={isLoadingGems || districtDetails === 'loading'} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-base py-2.5 h-auto">
@@ -288,7 +294,8 @@ export function DistrictExplorer() {
                    {districtImageUrl && typeof districtImageUrl === 'string' ? (
                       <Image
                         src={districtImageUrl} // Use the generated data URI
-                        alt={`AI generated image of ${districtDetails.name}`}
+                        // Enhanced Alt text for SEO
+                        alt={`AI generated representation of ${districtDetails.name} district, Nepal. Key landmark or landscape for travel planning.`}
                         fill
                         className="object-cover"
                         sizes="(max-width: 1024px) 100vw, 66vw"
@@ -297,7 +304,7 @@ export function DistrictExplorer() {
                    ) : districtImageUrl === 'error' ? (
                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50 text-muted-foreground">
                            <ImageOff className="h-16 w-16 mb-4 opacity-50" />
-                           <p>Could not load image.</p>
+                           <p>Could not load image for {districtDetails.name}.</p>
                        </div>
                    ) : (
                        // Fallback or initial state before image loads (can be Skeleton if preferred, but should be covered by loading state above)
@@ -317,7 +324,7 @@ export function DistrictExplorer() {
                  {isLoadingGems && (
                      <div className="flex items-center justify-center p-4 border rounded-lg bg-muted/50">
                         <Loader2 className="mr-2 h-5 w-5 animate-spin text-accent" />
-                        <p className="text-accent text-base font-medium">AI is searching for hidden gems based on your preferences...</p>
+                        <p className="text-accent text-base font-medium">AI is searching for hidden gems based on your preferences for your Nepal tour...</p>
                     </div>
                  )}
                 {hiddenGems && !isLoadingGems && (
@@ -337,7 +344,7 @@ export function DistrictExplorer() {
                           <Alert className="bg-muted/50">
                             <Info className="h-4 w-4" />
                             <AlertTitle>No Specific Gems Found</AlertTitle>
-                            <AlertDescription>AI couldn't find specific hidden gems based on the input, or none match your preferences. Explore the general attractions below!</AlertDescription>
+                            <AlertDescription>AI couldn't find specific hidden gems based on the input, or none match your preferences. Explore the general attractions below for your Nepal visit!</AlertDescription>
                           </Alert>
                         )
                     )
@@ -351,6 +358,7 @@ export function DistrictExplorer() {
                       <div className="flex items-center gap-2"><MapPin className="h-6 w-6 text-primary" /> Top Attractions</div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-2 pb-3 text-base">
+                       <p className="mb-2 text-muted-foreground">Must-see places when you visit {districtDetails.name}:</p>
                       <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
                         {renderList(districtDetails.attractions)}
                       </ul>
@@ -361,6 +369,7 @@ export function DistrictExplorer() {
                      <div className="flex items-center gap-2"><Building className="h-6 w-6 text-primary" /> Accommodations</div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-2 pb-3 text-base">
+                       <p className="mb-2 text-muted-foreground">Where to stay during your tour in {districtDetails.name}:</p>
                        <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
                         {renderList(districtDetails.accommodations)}
                       </ul>
@@ -373,6 +382,7 @@ export function DistrictExplorer() {
                       <div className="flex items-center gap-2"><Trees className="h-6 w-6 text-primary" /> Activities & Events</div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-2 pb-3 text-base">
+                       <p className="mb-2 text-muted-foreground">Things to do and experience while travelling in {districtDetails.name}:</p>
                        <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
                          {renderList(districtDetails.activities)}
                       </ul>
@@ -383,6 +393,7 @@ export function DistrictExplorer() {
                       <div className="flex items-center gap-2"><Utensils className="h-6 w-6 text-primary" /> Local Cuisine</div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-2 pb-3 text-base">
+                       <p className="mb-2 text-muted-foreground">Taste the local flavors of {districtDetails.name} during your visit:</p>
                        <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
                         {renderList(districtDetails.food)}
                       </ul>
@@ -397,11 +408,11 @@ export function DistrictExplorer() {
                 <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
                 <CardHeader>
                     <Compass className="h-20 w-20 text-primary mx-auto mb-6" />
-                    <CardTitle className="text-3xl">Select a District to Begin</CardTitle>
+                    <CardTitle className="text-3xl">Select a District to Begin Your Nepal Exploration</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <CardDescription className="text-lg max-w-md mx-auto">
-                    Choose a district from the list on the left to view its attractions, get AI-powered travel tips, and much more.
+                    Choose a district from the list on the left to view its attractions, get AI-powered travel tips, and plan your perfect Nepal tour or visit.
                     </CardDescription>
                 </CardContent>
                 </Card>
@@ -412,4 +423,3 @@ export function DistrictExplorer() {
     </div>
   );
 }
-

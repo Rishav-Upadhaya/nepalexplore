@@ -1,6 +1,21 @@
-// src/app/sustainability/page.tsx
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Leaf, Recycle, Footprints, TrendingUp } from "lucide-react";
+import type { Metadata } from 'next';
+
+// Static metadata for the Sustainability page
+export const metadata: Metadata = {
+  title: 'Sustainable Travel in Nepal | Responsible Tourism',
+  description: 'Learn about sustainable and responsible tourism practices in Nepal. Discover eco-friendly travel tips and support local communities during your visit.',
+  keywords: ['Sustainable Travel Nepal', 'Responsible Tourism Nepal', 'Eco Travel Nepal', 'Nepal Sustainability', 'Community Tourism Nepal', 'Ethical Travel Nepal'],
+   openGraph: {
+      title: 'Sustainable Travel in Nepal | Responsible Tourism',
+      description: 'Learn about eco-friendly travel tips and support local communities in Nepal.',
+    },
+     twitter: {
+        title: 'Sustainable Travel in Nepal | Responsible Tourism',
+        description: 'Learn about eco-friendly travel tips and support local communities in Nepal.',
+    }
+};
 
 export default function SustainabilityPage() {
   return (

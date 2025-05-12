@@ -6,23 +6,26 @@ const categories = [
   {
     title: "Rich Culture & Heritage",
     icon: Palette,
-    description: "Discover ancient temples, vibrant festivals, and the warm hospitality of the Nepali people. Explore UNESCO World Heritage sites in Kathmandu Valley.",
+    description: "Discover ancient temples, vibrant festivals, and the warm hospitality of the Nepali people. Explore UNESCO World Heritage sites in Kathmandu Valley on your Nepal tour.",
     image: "https://picsum.photos/seed/culture_nepal/600/400",
     hint: "Nepal temple festival",
+    alt: "Colorful prayer flags fluttering at a historic temple in Kathmandu, Nepal, showcasing rich culture.", // Descriptive alt text
   },
   {
     title: "Thrilling Adventures",
     icon: MountainSnow,
-    description: "Embark on world-class treks like Everest Base Camp and Annapurna Circuit, or try rafting, paragliding, and bungee jumping amidst stunning landscapes.",
+    description: "Embark on world-class treks like Everest Base Camp and Annapurna Circuit, or try rafting, paragliding, and bungee jumping amidst stunning landscapes during your Nepal travel.",
     image: "https://picsum.photos/seed/adventure_nepal/600/400",
     hint: "Nepal trekking mountain",
+    alt: "Trekkers approaching a snow-capped peak in the Himalayas, representing adventure travel in Nepal.", // Descriptive alt text
   },
   {
     title: "Diverse Wildlife",
     icon: PawPrint, // Using PawPrint for wildlife
-    description: "Explore national parks teeming with rare species like the Bengal tiger, one-horned rhinoceros, and elusive snow leopard. A paradise for nature lovers.",
+    description: "Explore national parks teeming with rare species like the Bengal tiger, one-horned rhinoceros, and elusive snow leopard. A paradise for nature lovers visiting Nepal.",
     image: "https://picsum.photos/seed/wildlife_nepal/600/400",
     hint: "Nepal rhino tiger",
+    alt: "A one-horned rhinoceros grazing in Chitwan National Park, highlighting Nepal's diverse wildlife.", // Descriptive alt text
   }
 ];
 
@@ -31,12 +34,10 @@ export function WhyNepal() {
     <section className="py-16 md:py-24 bg-muted/30">
       <div className="container">
         <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-primary">Why Nepal?</h2>
-          {/* Optional subtitle if needed: 
-          <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
-            A land of breathtaking beauty, spiritual serenity, and unparalleled adventure.
-          </p> 
-          */}
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-primary">Why Visit Nepal?</h2>
+           <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
+            Discover a land of breathtaking beauty, spiritual serenity, and unparalleled adventure for your next travel or tour.
+          </p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
@@ -46,10 +47,11 @@ export function WhyNepal() {
                 <div className="aspect-video relative w-full">
                   <Image
                     src={category.image}
-                    alt={category.title}
+                    alt={category.alt} // Use the descriptive alt text
                     data-ai-hint={category.hint}
                     fill
                     className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Add sizes prop
                   />
                 </div>
               </CardHeader>
