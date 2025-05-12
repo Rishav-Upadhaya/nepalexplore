@@ -380,13 +380,6 @@ export function ItineraryPlanner() {
                     </Card>
                   </div>
                 ))}
-                 <Separator className="my-8" />
-                <div className="text-center">
-                  <Button variant="outline" className="text-lg py-3 h-auto border-primary text-primary hover:bg-primary/10">
-                    <FileText className="mr-2 h-5 w-5" />
-                    Export Itinerary (PDF)
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )}
