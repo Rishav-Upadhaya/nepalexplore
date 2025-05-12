@@ -93,7 +93,7 @@ Generate or modify a detailed day-by-day travel plan based on the user's request
 4.  **Budget Alignment:** Ensure suggested activities and hotels generally align with the overall trip budget range provided by the user. For example, don't suggest primarily luxury hotels for a "< $500 USD" budget.
 5.  **Respect Must-Visit (Custom Only):** If the user specifies 'mustVisitPlaces' (for custom itineraries), ensure these are included logically within the itinerary.
 6.  **Maintain Overall Context (Modifications):** When modifying, try to keep the original duration and budget unless the modification request explicitly asks to change them. The modified itinerary should still make sense as a whole.
-7.  **Route Diversity:** For all itineraries, especially random ones, aim to create routes that avoid excessive backtracking or repetition of locations unless it's logically necessary (e.g., passing through a hub) or explicitly requested by the user in a modification. Showcase a variety of experiences and places.
+7.  **Route Optimization & Diversity:** Design routes that are efficient and minimize redundant travel. Actively avoid backtracking or repeating locations unless absolutely essential for the journey's logic (e.g., a necessary transit hub) or if the user explicitly requests it in a modification. The goal is to showcase a wide variety of experiences and places in a logical sequence.
 8.  **End Point Handling:**
     *   **Custom:** If an endPoint is provided, the itinerary should conclude there. If not, it can end anywhere logical based on the route.
     *   **Random:** If an endPoint is provided and it's different from startPoint, the itinerary should conclude at the specified endPoint. If no endPoint is provided, the itinerary MUST end back at the startPoint.
@@ -138,7 +138,7 @@ Please carefully review the previous itinerary and the modification request. Upd
 {{#if endPoint}}*   End Point: {{{endPoint}}}{{/if}}
 {{#if mustVisitPlaces}}*   Must-Visit Places/Regions: {{{mustVisitPlaces}}}{{/if}}
 
-Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically, incorporates the must-visit locations if provided, and includes diverse locations beyond just Kathmandu/Pokhara/Chitwan as appropriate (see critical instruction #1). For longer durations, try to cover more ground across different regions. Pay attention to the specified end point if provided (Critical Instruction #8). Follow the other critical instructions above, paying close attention to budget and route diversity.
+Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically, incorporates the must-visit locations if provided, and includes diverse locations beyond just Kathmandu/Pokhara/Chitwan as appropriate (see critical instruction #1). For longer durations, try to cover more ground across different regions. Pay attention to the specified end point if provided (Critical Instruction #8). Follow the other critical instructions above, paying close attention to budget and route diversity (Critical Instruction #7).
 
 {{else}}
 **Itinerary Type:** Random Adventure
@@ -204,7 +204,7 @@ const aiItineraryToolFlow = ai.defineFlow(
             processedInput.mustVisitPlaces = undefined;
             // End point is handled by the prompt based on whether it's provided or not. No need to force it here.
         } else { // If it's custom
-            // Nothing specific needed here anymore, general processing handles optional fields.
+            // Interests and mustVisitPlaces are handled by the zod schema refinement or general processing
         }
     }
 
