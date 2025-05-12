@@ -44,8 +44,9 @@ export type AiItineraryToolOutput = z.infer<typeof AiItineraryToolOutputSchema>;
 
 export async function aiItineraryTool(input: AiItineraryToolInput): Promise<AiItineraryToolOutput> {
   // Basic validation: Ensure interests are provided for custom type
-  if (input.itineraryType === 'custom' && !input.interests) {
-      throw new Error("Interests are required for a custom itinerary.");
+  if (input.itineraryType === 'custom' && (!input.interests || input.interests.length < 10)) {
+      // This validation is now primarily handled by the Zod schema refinement, but kept here as a safety net.
+      throw new Error("Interests (min 10 characters) are required for a custom itinerary.");
   }
   return aiItineraryToolFlow(input);
 }
@@ -54,9 +55,10 @@ const prompt = ai.definePrompt({
   name: 'aiItineraryToolPrompt',
   input: {schema: AiItineraryToolInputSchema},
   output: {schema: AiItineraryToolOutputSchema},
+  // Updated prompt using standard #if based on the presence of 'interests' field
   prompt: `You are a creative and knowledgeable travel expert specializing in crafting exciting itineraries for Nepal. Generate a detailed day-by-day travel plan based on the user's request. Be engaging and descriptive in the activities.
 
-{{#eq itineraryType 'custom'}}
+{{#if interests}} {{! Use the presence of 'interests' as a proxy for 'custom' type }}
 **Itinerary Type:** Custom Plan
 
 **User Preferences:**
@@ -69,7 +71,7 @@ const prompt = ai.definePrompt({
 
 Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically and incorporates the must-visit locations if provided.
 
-{{else}}
+{{else}} {{! If interests are not provided (or empty), assume 'random' }}
 **Itinerary Type:** Random Adventure
 
 **User Preferences:**
@@ -78,7 +80,7 @@ Generate a personalized itinerary considering all these preferences. Ensure the 
 *   Start Point: {{{startPoint}}}
 
 Generate a plausible and exciting random itinerary starting from {{startPoint}} for {{duration}} days, suitable for a {{budget}} budget. Focus on a balanced mix of popular highlights and potentially some interesting lesser-known spots accessible from the route. Make it sound like a fun adventure!
-{{/eq}}
+{{/if}}
 
 **Output Format:**
 Provide the output as a JSON array of objects. Each object must represent a day and contain 'day' (number), 'location' (string), and 'activities' (string).
@@ -100,14 +102,15 @@ const aiItineraryToolFlow = ai.defineFlow(
     outputSchema: AiItineraryToolOutputSchema,
   },
   async input => {
-     // Ensure optional fields are passed correctly or as undefined if empty
+     // Ensure optional fields are passed correctly or as undefined if empty/null
     const processedInput = {
       ...input,
       endPoint: input.endPoint || undefined,
       mustVisitPlaces: input.mustVisitPlaces || undefined,
-      interests: input.interests || undefined,
+      interests: input.interests || undefined, // Pass interests even if empty for the #if logic in handlebars
     };
     const {output} = await prompt(processedInput);
     return output!;
   }
 );
+
