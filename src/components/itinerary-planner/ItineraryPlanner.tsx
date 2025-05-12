@@ -1,9 +1,9 @@
 
 "use client";
 
-import { useState, useRef, useCallback } from 'react'; // Added useCallback
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,59 +11,69 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { aiItineraryTool, type AiItineraryToolOutput } from '@/ai/flows/ai-itinerary-tool';
+import { aiItineraryTool, type AiItineraryToolOutput, type AiItineraryToolInput } from '@/ai/flows/ai-itinerary-tool';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Route, CalendarDays, DollarSign, MapPinIcon, Sparkles, ListChecks, Info, FileText, Shuffle, Edit, Hotel, Download } from 'lucide-react'; // Added Download icon
+import { Loader2, Route, CalendarDays, DollarSign, MapPinIcon, Sparkles, ListChecks, Info, FileText, Shuffle, Edit, Hotel, Download, MessageSquarePlus } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { nepalDistrictsByRegion, type DistrictName, budgetRanges } from '@/types'; // Import budgetRanges
+import { nepalDistrictsByRegion, type DistrictName, budgetRanges } from '@/types';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 
-// Define schema for both types using the imported budgetRanges
 const formSchema = z.object({
   itineraryType: z.enum(["custom", "random"], { required_error: "Please select an itinerary type." }),
-  interests: z.string().optional(), // Optional for random
+  interests: z.string().optional(),
   duration: z.coerce.number().min(1, { message: "Duration must be at least 1 day." }).max(30, { message: "Duration cannot exceed 30 days."}),
-  // Use the keys from budgetRanges for the enum
   budget: z.enum(Object.keys(budgetRanges) as [keyof typeof budgetRanges, ...(keyof typeof budgetRanges)[]] , { required_error: "Please select a budget range." }),
   startPoint: z.string({required_error: "Please select a starting point."}).min(1, { message: "Please select a starting point." }),
   endPoint: z.string().optional(),
   mustVisitPlaces: z.string().optional(),
 }).refine(data => {
-    // Require interests for custom itinerary
     if (data.itineraryType === 'custom' && (!data.interests || data.interests.length < 10)) {
       return false;
     }
     return true;
   }, {
     message: "Please describe your interests (min 10 characters) for a custom itinerary.",
-    path: ["interests"], // Path to the field to attach the error message
+    path: ["interests"],
   });
+
+// Schema for modification input
+const modificationSchema = z.object({
+    modificationRequest: z.string().min(10, "Please describe your desired changes (min 10 characters).").max(500, "Modification request is too long (max 500 characters).")
+});
 
 
 export function ItineraryPlanner() {
   const [itinerary, setItinerary] = useState<AiItineraryToolOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [isExporting, setIsExporting] = useState(false); // State for PDF export loading
+  const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const itineraryRef = useRef<HTMLDivElement>(null); // Ref for the itinerary container
+  const itineraryRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [originalFormValues, setOriginalFormValues] = useState<z.infer<typeof formSchema> | null>(null); // To store initial form values
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      itineraryType: "custom", // Default to custom
+      itineraryType: "custom",
       interests: "",
       duration: 7,
-      budget: undefined, // Start with no budget selected
-      startPoint: "Kathmandu", // Default starting point
+      budget: undefined,
+      startPoint: "Kathmandu",
       endPoint: "",
       mustVisitPlaces: "",
     },
+  });
+
+  const modificationForm = useForm<z.infer<typeof modificationSchema>>({
+      resolver: zodResolver(modificationSchema),
+      defaultValues: {
+          modificationRequest: "",
+      }
   });
 
   const itineraryType = form.watch("itineraryType");
@@ -72,21 +82,18 @@ export function ItineraryPlanner() {
     setIsLoading(true);
     setError(null);
     setItinerary(null);
+    setOriginalFormValues(values); // Store the form values used for generation
     try {
-      // Map the selected budget key to its display value for the AI
       const budgetLabel = budgetRanges[values.budget];
-
-      // Clear optional fields if 'random' is selected
-      const payload = values.itineraryType === 'random' ? {
+      const payload: AiItineraryToolInput = values.itineraryType === 'random' ? {
         ...values,
-        budget: budgetLabel, // Send the label to the AI
-        interests: undefined, // Ensure interests are not sent for random
+        budget: budgetLabel,
+        interests: undefined,
         endPoint: undefined,
         mustVisitPlaces: undefined,
       } : {
           ...values,
-          budget: budgetLabel, // Send the label to the AI
-          // Handle the "none" value for optional dropdowns
+          budget: budgetLabel,
           endPoint: values.endPoint === "none" || values.endPoint === "" ? undefined : values.endPoint,
           mustVisitPlaces: values.mustVisitPlaces === "none" || values.mustVisitPlaces === "" ? undefined : values.mustVisitPlaces,
         };
@@ -109,67 +116,99 @@ export function ItineraryPlanner() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]); // Add toast as dependency
+  }, [toast]);
 
-  // Function to handle PDF export
+  const handleModifyItinerary = useCallback(async (modificationData: z.infer<typeof modificationSchema>) => {
+    if (!itinerary || !originalFormValues) {
+        toast({ title: "Error", description: "No itinerary to modify or original parameters missing.", variant: "destructive"});
+        return;
+    }
+    setIsLoading(true); // Use same loading state or a new one like `isModifying`
+    setError(null);
+
+    try {
+        const budgetLabel = budgetRanges[originalFormValues.budget];
+        const payload: AiItineraryToolInput = {
+            ...originalFormValues, // Use original form values for context
+            budget: budgetLabel,
+            previousItinerary: itinerary, // Pass the current itinerary
+            modificationRequest: modificationData.modificationRequest,
+            // Ensure optional fields are correctly set from originalFormValues
+            endPoint: originalFormValues.endPoint === "none" || originalFormValues.endPoint === "" ? undefined : originalFormValues.endPoint,
+            mustVisitPlaces: originalFormValues.mustVisitPlaces === "none" || originalFormValues.mustVisitPlaces === "" ? undefined : originalFormValues.mustVisitPlaces,
+        };
+
+        const result = await aiItineraryTool(payload);
+        setItinerary(result); // Update with modified itinerary
+        modificationForm.reset(); // Reset modification input
+        toast({
+            title: "Itinerary Modified!",
+            description: "Your travel plan has been updated based on your request.",
+        });
+    } catch (e) {
+        console.error("Modification error:", e);
+        const errorMessage = e instanceof Error ? e.message : "Failed to modify itinerary.";
+        setError(errorMessage);
+        toast({
+            title: "Modification Error",
+            description: errorMessage,
+            variant: "destructive",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }, [itinerary, originalFormValues, modificationForm, toast]);
+
+
   const handleExportPdf = useCallback(async () => {
     if (!itineraryRef.current) {
       console.error("Itinerary element not found for export.");
       toast({ title: "Export Error", description: "Could not find itinerary to export.", variant: "destructive" });
       return;
     }
-
     setIsExporting(true);
     toast({ title: "Exporting PDF...", description: "Please wait." });
-
     try {
       const canvas = await html2canvas(itineraryRef.current, {
-         scale: 2, // Improve resolution
-         useCORS: true, // Handle external images if any
-         logging: false, // Reduce console noise
-         backgroundColor: null, // Use element background
-         windowWidth: itineraryRef.current.scrollWidth, // Ensure full width is captured
-         windowHeight: itineraryRef.current.scrollHeight, // Ensure full height is captured
+         scale: 2,
+         useCORS: true,
+         logging: false,
+         backgroundColor: null,
+         windowWidth: itineraryRef.current.scrollWidth,
+         windowHeight: itineraryRef.current.scrollHeight,
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'pt', // points
-        format: 'a4', // standard A4 size
+        unit: 'pt',
+        format: 'a4',
       });
-
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgProps= pdf.getImageProperties(imgData);
       const imgWidth = imgProps.width;
       const imgHeight = imgProps.height;
-
-      // Calculate the aspect ratio to fit the image within the PDF page width
       const ratio = pdfWidth / imgWidth;
       const calculatedHeight = imgHeight * ratio;
       let heightLeft = calculatedHeight;
-      let position = 15; // Top margin
-
+      let position = 15;
       pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
       heightLeft -= pdfHeight;
-
       while (heightLeft >= 0) {
-          position = heightLeft - calculatedHeight + 15; // Adjust position for next page
+          position = heightLeft - calculatedHeight + 15;
           pdf.addPage();
           pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
           heightLeft -= pdfHeight;
       }
-
       pdf.save('nepal-itinerary.pdf');
-
-       toast({ title: "Export Successful!", description: "Your itinerary has been saved as a PDF." });
+      toast({ title: "Export Successful!", description: "Your itinerary has been saved as a PDF." });
     } catch (error) {
       console.error("Error exporting PDF:", error);
       toast({ title: "Export Failed", description: "Could not generate the PDF. Please try again.", variant: "destructive" });
     } finally {
       setIsExporting(false);
     }
-  }, [toast]); // Add toast as dependency
+  }, [toast]);
 
 
   return (
@@ -182,7 +221,6 @@ export function ItineraryPlanner() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
-        {/* Form Sidebar */}
         <Card className="lg:col-span-1 shadow-xl sticky top-24 border border-primary/20">
           <CardHeader className="bg-primary/5 p-6">
             <CardTitle className="flex items-center gap-2 text-primary"><Route className="h-7 w-7" /> Plan Your Trip</CardTitle>
@@ -199,7 +237,15 @@ export function ItineraryPlanner() {
                       <FormLabel className="font-semibold text-base">Choose Itinerary Type</FormLabel>
                       <FormControl>
                         <RadioGroup
-                          onValueChange={field.onChange}
+                          onValueChange={(value) => {
+                              field.onChange(value);
+                              // Reset specific fields if switching to random
+                              if (value === 'random') {
+                                  form.resetField("interests");
+                                  form.resetField("endPoint");
+                                  form.resetField("mustVisitPlaces");
+                              }
+                          }}
                           defaultValue={field.value}
                           className="flex space-x-4"
                         >
@@ -225,15 +271,13 @@ export function ItineraryPlanner() {
                     </FormItem>
                   )}
                 />
-
-                {/* Common Fields */}
                  <FormField
                     control={form.control}
                     name="startPoint"
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel className="font-semibold text-base">Starting Point</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value || undefined} defaultValue={field.value}>
                             <FormControl>
                                 <SelectTrigger className="h-11 text-base">
                                     <SelectValue placeholder="Select starting district" />
@@ -254,7 +298,6 @@ export function ItineraryPlanner() {
                     </FormItem>
                     )}
                 />
-
                 <div className="grid grid-cols-2 gap-4">
                     <FormField
                         control={form.control}
@@ -275,14 +318,13 @@ export function ItineraryPlanner() {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel className="font-semibold text-base">Budget (Total Trip)</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || undefined} defaultValue={field.value}>
                             <FormControl>
                                 <SelectTrigger className="h-11 text-base">
                                 <SelectValue placeholder="Select budget range" />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                {/* Iterate over budgetRanges */}
                                 {Object.entries(budgetRanges).map(([key, label]) => (
                                      <SelectItem key={key} value={key} className="text-base">{label}</SelectItem>
                                 ))}
@@ -293,9 +335,6 @@ export function ItineraryPlanner() {
                         )}
                     />
                 </div>
-
-
-                {/* Custom Fields */}
                 {itineraryType === 'custom' && (
                   <>
                     <FormField
@@ -321,7 +360,7 @@ export function ItineraryPlanner() {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
-                             <Select onValueChange={field.onChange} defaultValue={field.value || "none"}>
+                             <Select onValueChange={field.onChange} value={field.value || "none"} defaultValue={field.value || "none"}>
                                 <FormControl>
                                     <SelectTrigger className="h-11 text-base">
                                         <SelectValue placeholder="Select ending district (optional)" />
@@ -362,7 +401,6 @@ export function ItineraryPlanner() {
                     />
                   </>
                 )}
-
                 <Button type="submit" disabled={isLoading || isExporting} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
                   {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                   {isLoading ? "Generating..." : (itineraryType === 'custom' ? "Generate Custom Itinerary" : "Generate Random Adventure")}
@@ -373,7 +411,6 @@ export function ItineraryPlanner() {
           </CardContent>
         </Card>
 
-        {/* Itinerary Display Area */}
         <div className="lg:col-span-2">
           {isLoading && (
              <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
@@ -393,6 +430,7 @@ export function ItineraryPlanner() {
           )}
 
           {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
+            <>
             <Card className="shadow-xl border">
               <CardHeader className="bg-primary/5 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -406,23 +444,17 @@ export function ItineraryPlanner() {
                   {isExporting ? "Exporting..." : "Export PDF"}
                 </Button>
               </CardHeader>
-              {/* Add ref to the content that needs to be exported */}
-              {/* Add a wrapper div specifically for PDF export content */}
-              <div ref={itineraryRef} className="bg-background"> {/* Ensure background for canvas */}
+              <div ref={itineraryRef} className="bg-background">
                 <CardContent className="p-6 space-y-6">
-                    {/* Timeline View Placeholder */}
-                    <div className="p-4 border rounded-lg bg-muted/50 text-center hidden print:block"> {/* Hide in normal view, show for print/PDF */}
+                    <div className="p-4 border rounded-lg bg-muted/50 text-center hidden print:block">
                         <h3 className="text-lg font-semibold text-primary mb-2">VisitNepal Itinerary</h3>
                         <p className="text-muted-foreground text-sm">Generated for {form.getValues('duration')} days, starting from {form.getValues('startPoint')}.</p>
                     </div>
-
-                    {/* Itinerary Days */}
                     {itinerary.itinerary.map((dayPlan, index) => (
                     <div key={index} className="relative pl-10 group">
                         <span className="absolute left-[-2px] top-1 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg shadow z-10 print:bg-gray-700 print:text-white">
                         {dayPlan.day}
                         </span>
-                        {/* Vertical line connecting days */}
                         {index < itinerary.itinerary.length - 1 && (
                             <div className="absolute left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden print:bg-gray-300" />
                         )}
@@ -431,7 +463,6 @@ export function ItineraryPlanner() {
                             <CardTitle className="text-xl flex items-center gap-2 print:text-lg">
                             <MapPinIcon className="h-6 w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
                             </CardTitle>
-                            {/* REMOVED: Estimated Daily Cost Section */}
                         </CardHeader>
                         <CardContent className="p-4 pt-0 space-y-3 print:p-3 print:pt-0 print:space-y-2">
                             <div>
@@ -465,6 +496,46 @@ export function ItineraryPlanner() {
                 </CardContent>
              </div>
             </Card>
+
+            {/* Modification Section */}
+            <Card className="shadow-xl border mt-8">
+                <CardHeader className="bg-muted/50 p-6">
+                    <CardTitle className="text-xl flex items-center gap-2 text-primary">
+                        <MessageSquarePlus className="h-7 w-7"/> Want to Change Something?
+                    </CardTitle>
+                    <CardDescription className="text-base mt-1">
+                        Suggest modifications to your itinerary below (e.g., "Spend one more day in Pokhara", "I prefer hiking over city tours on day 2").
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="p-6">
+                    <Form {...modificationForm}>
+                        <form onSubmit={modificationForm.handleSubmit(handleModifyItinerary)} className="space-y-4">
+                            <FormField
+                                control={modificationForm.control}
+                                name="modificationRequest"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="font-semibold text-base">Your Modification Request</FormLabel>
+                                        <FormControl>
+                                            <Textarea
+                                                placeholder="Tell us what you'd like to change..."
+                                                className="min-h-[100px] text-base"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" disabled={isLoading || isExporting} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-3 h-auto">
+                                {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Edit className="mr-2 h-5 w-5" />}
+                                {isLoading ? "Applying Changes..." : "Apply Changes"}
+                            </Button>
+                        </form>
+                    </Form>
+                </CardContent>
+            </Card>
+            </>
           )}
           {itinerary && itinerary.itinerary.length === 0 && !isLoading && (
              <Alert>
@@ -491,3 +562,4 @@ export function ItineraryPlanner() {
     </div>
   );
 }
+
