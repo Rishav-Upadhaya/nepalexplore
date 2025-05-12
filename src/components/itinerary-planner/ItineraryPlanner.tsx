@@ -18,17 +18,18 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { nepalDistrictsByRegion, type DistrictName } from '@/types';
+import { nepalDistrictsByRegion, type DistrictName, budgetRanges } from '@/types'; // Import budgetRanges
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 
-// Define schema for both types
+// Define schema for both types using the imported budgetRanges
 const formSchema = z.object({
   itineraryType: z.enum(["custom", "random"], { required_error: "Please select an itinerary type." }),
   interests: z.string().optional(), // Optional for random
   duration: z.coerce.number().min(1, { message: "Duration must be at least 1 day." }).max(30, { message: "Duration cannot exceed 30 days."}),
-  budget: z.enum(["low", "medium", "high"], { required_error: "Please select a budget." }),
+  // Use the keys from budgetRanges for the enum
+  budget: z.enum(Object.keys(budgetRanges) as [keyof typeof budgetRanges, ...(keyof typeof budgetRanges)[]] , { required_error: "Please select a budget range." }),
   startPoint: z.string({required_error: "Please select a starting point."}).min(1, { message: "Please select a starting point." }),
   endPoint: z.string().optional(),
   mustVisitPlaces: z.string().optional(),
@@ -58,7 +59,7 @@ export function ItineraryPlanner() {
       itineraryType: "custom", // Default to custom
       interests: "",
       duration: 7,
-      budget: undefined,
+      budget: undefined, // Start with no budget selected
       startPoint: "Kathmandu", // Default starting point
       endPoint: "",
       mustVisitPlaces: "",
@@ -72,14 +73,19 @@ export function ItineraryPlanner() {
     setError(null);
     setItinerary(null);
     try {
+      // Map the selected budget key to its display value for the AI
+      const budgetLabel = budgetRanges[values.budget];
+
       // Clear optional fields if 'random' is selected
       const payload = values.itineraryType === 'random' ? {
         ...values,
+        budget: budgetLabel, // Send the label to the AI
         interests: undefined, // Ensure interests are not sent for random
         endPoint: undefined,
         mustVisitPlaces: undefined,
       } : {
           ...values,
+          budget: budgetLabel, // Send the label to the AI
           // Handle the "none" value for optional dropdowns
           endPoint: values.endPoint === "none" || values.endPoint === "" ? undefined : values.endPoint,
           mustVisitPlaces: values.mustVisitPlaces === "none" || values.mustVisitPlaces === "" ? undefined : values.mustVisitPlaces,
@@ -268,17 +274,18 @@ export function ItineraryPlanner() {
                         name="budget"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel className="font-semibold text-base">Budget</FormLabel>
+                            <FormLabel className="font-semibold text-base">Budget (Total Trip)</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                             <FormControl>
                                 <SelectTrigger className="h-11 text-base">
-                                <SelectValue placeholder="Select budget" />
+                                <SelectValue placeholder="Select budget range" />
                                 </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                                <SelectItem value="low" className="text-base">Low</SelectItem>
-                                <SelectItem value="medium" className="text-base">Medium</SelectItem>
-                                <SelectItem value="high" className="text-base">High</SelectItem>
+                                {/* Iterate over budgetRanges */}
+                                {Object.entries(budgetRanges).map(([key, label]) => (
+                                     <SelectItem key={key} value={key} className="text-base">{label}</SelectItem>
+                                ))}
                             </SelectContent>
                             </Select>
                             <FormMessage />
@@ -424,7 +431,11 @@ export function ItineraryPlanner() {
                             <CardTitle className="text-xl flex items-center gap-2 print:text-lg">
                             <MapPinIcon className="h-6 w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
                             </CardTitle>
-                            <p className="text-sm text-muted-foreground font-medium print:text-xs">Day {dayPlan.day}</p>
+                            {dayPlan.estimatedDailyCost && (
+                                <p className="text-sm text-muted-foreground font-medium flex items-center gap-1.5 print:text-xs">
+                                     <DollarSign className="h-4 w-4 print:h-3 print:w-3"/> Est. Cost: {dayPlan.estimatedDailyCost}
+                                </p>
+                            )}
                         </CardHeader>
                         <CardContent className="p-4 pt-0 space-y-3 print:p-3 print:pt-0 print:space-y-2">
                             <div>

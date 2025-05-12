@@ -1,9 +1,11 @@
+
 // Contains shared types and constants for the application.
 
 export interface ItineraryDay {
   day: number;
   location: string;
   activities: string;
+  estimatedDailyCost?: string; // Added optional field
 }
 
 export interface Itinerary {
@@ -67,4 +69,16 @@ export const nepalDistrictsByRegion = {
 } as const;
 
 export type RegionName = keyof typeof nepalDistrictsByRegion;
+
+// Define budget ranges
+export const budgetRanges = {
+  'budget_under_500': '< $500 USD',
+  'budget_500_1000': '$500 - $1000 USD',
+  'budget_1000_2000': '$1000 - $2000 USD',
+  'budget_2000_3000': '$2000 - $3000 USD',
+  'budget_over_3000': '> $3000 USD'
+} as const;
+
+export type BudgetRangeKey = keyof typeof budgetRanges;
+export type BudgetRangeLabel = typeof budgetRanges[BudgetRangeKey];
 
