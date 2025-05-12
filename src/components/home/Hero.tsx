@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, Globe } from 'lucide-react';
+import { ArrowRight, Map } from 'lucide-react'; // Changed Globe to Map
 
 export function Hero() {
   return (
@@ -20,22 +20,22 @@ export function Hero() {
           </Link>
         </Button>
       </div>
-      
+
       <div className="container mt-16 md:mt-24">
+        {/* Updated Interactive Map Section for 2D */}
         <div className="relative aspect-[16/7] bg-muted/50 rounded-xl shadow-2xl overflow-hidden group p-8 flex flex-col items-center justify-center text-center border">
-           <Globe className="h-16 w-16 text-primary mb-6 opacity-50" />
-           <h2 className="text-3xl md:text-4xl font-bold text-primary">Interactive 3D Map of Nepal</h2>
+           <Map className="h-16 w-16 text-primary mb-6 opacity-50" /> {/* Changed Icon */}
+           <h2 className="text-3xl md:text-4xl font-bold text-primary">Interactive 2D Map of Nepal</h2> {/* Updated Title */}
            <p className="mt-3 text-muted-foreground max-w-xl">
-            (Coming Soon) Immerse yourself in an interactive 3D replica of Nepal's geography and landmarks. Explore mountains, rivers, and cultural sites like never before.
+            (Coming Soon) Explore Nepal with our interactive 2D map. Discover districts, landmarks, and points of interest with clickable hotspots and detailed information. {/* Updated Description */}
            </p>
-           {/* Placeholder for Three.js canvas or interactive map component */}
             <div className="mt-4 text-sm text-muted-foreground/70">
-                This will be replaced by a WebGL/Three.js powered map.
+                This will be replaced by an interactive 2D map component (e.g., using Mapbox GL JS or Leaflet).
             </div>
              <Image
-              src="https://picsum.photos/seed/nepalmap/1200/400" // Placeholder image for the map area
-              alt="Stylized map of Nepal"
-              data-ai-hint="Nepal map abstract"
+              src="https://picsum.photos/seed/nepalmap2d/1200/400" // Potentially new seed for a different image
+              alt="Interactive 2D map of Nepal concept" // Updated Alt Text
+              data-ai-hint="Nepal map 2d" // Updated Hint
               fill
               className="object-cover opacity-10 group-hover:opacity-20 transition-opacity duration-500 -z-10"
               priority
