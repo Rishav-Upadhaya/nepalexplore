@@ -26,7 +26,8 @@ import html2canvas from 'html2canvas';
 const formSchema = z.object({
   itineraryType: z.enum(["custom", "random"], { required_error: "Please select an itinerary type." }),
   interests: z.string().optional(),
-  duration: z.coerce.number().min(1, { message: "Duration must be at least 1 day." }).max(30, { message: "Duration cannot exceed 30 days."}),
+  // Removed the max(30) limit for duration
+  duration: z.coerce.number().min(1, { message: "Duration must be at least 1 day." }),
   budget: z.enum(Object.keys(budgetRanges) as [keyof typeof budgetRanges, ...(keyof typeof budgetRanges)[]] , { required_error: "Please select a budget range." }),
   startPoint: z.string({required_error: "Please select a starting point."}).min(1, { message: "Please select a starting point." }),
   endPoint: z.string().optional(),
@@ -384,22 +385,33 @@ export function ItineraryPlanner() {
                                 </FormItem>
                                 )}
                             />
-                            <FormField
-                            control={form.control}
-                            name="mustVisitPlaces"
-                            render={({ field }) => (
+                             <FormField
+                                control={form.control}
+                                name="mustVisitPlaces"
+                                render={({ field }) => (
                                 <FormItem>
-                                <FormLabel className="font-semibold text-base">Must-Visit Places/Regions (Optional)</FormLabel>
-                                <FormControl>
-                                    <Textarea
-                                    placeholder="List specific places or regions, e.g., Lumbini, Everest Base Camp region, Bardia..."
-                                    className="min-h-[80px] text-base"
-                                    {...field}
-                                    />
-                                </FormControl>
-                                <FormMessage />
+                                    <FormLabel className="font-semibold text-base">Must-Visit Places/Regions (Optional)</FormLabel>
+                                     <Select onValueChange={field.onChange} value={field.value || "none"} defaultValue={field.value || "none"}>
+                                        <FormControl>
+                                            <SelectTrigger className="h-11 text-base">
+                                                <SelectValue placeholder="Select must-visit district (optional)" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
+                                            {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
+                                                <SelectGroup key={region}>
+                                                    <SelectLabel className="font-bold">{region}</SelectLabel>
+                                                    {districts.map(d => (
+                                                        <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
+                                                    ))}
+                                                </SelectGroup>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
                                 </FormItem>
-                            )}
+                                )}
                             />
                         </>
                         )}
@@ -490,29 +502,37 @@ export function ItineraryPlanner() {
                 </Button>
               </CardHeader>
               <div ref={itineraryRef} className="bg-background">
-                <CardContent className="p-6 space-y-6">
+                {/* Adjusted padding for better mobile view */}
+                <CardContent className="p-4 md:p-6 space-y-6">
                     <div className="p-4 border rounded-lg bg-muted/50 text-center hidden print:block">
                         <h3 className="text-lg font-semibold text-primary mb-2">VisitNepal Itinerary</h3>
                         <p className="text-muted-foreground text-sm">Generated for {originalFormValues?.duration} days, starting from {originalFormValues?.startPoint}.</p> {/* Use originalFormValues here */}
                     </div>
                     {itinerary.itinerary.map((dayPlan, index) => (
-                    <div key={index} className="relative pl-10 group">
-                        <span className="absolute left-[-2px] top-1 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg shadow z-10 print:bg-gray-700 print:text-white">
+                    // Adjusted relative positioning and padding for mobile
+                    <div key={index} className="relative pl-8 md:pl-10 group">
+                        {/* Adjusted icon size and position */}
+                        <span className="absolute left-[-2px] top-1 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-lg shadow z-10 print:bg-gray-700 print:text-white">
                         {dayPlan.day}
                         </span>
+                        {/* Adjusted line position */}
                         {index < itinerary.itinerary.length - 1 && (
-                            <div className="absolute left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden print:bg-gray-300" />
+                            <div className="absolute left-[14px] md:left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden print:bg-gray-300" />
                         )}
-                        <Card className="ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow print:shadow-none print:border-l-2 print:border-gray-400 print:ml-4">
-                        <CardHeader className="p-4 print:p-3">
-                            <CardTitle className="text-xl flex items-center gap-2 print:text-lg">
-                            <MapPinIcon className="h-6 w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
+                         {/* Adjusted margin for mobile */}
+                        <Card className="ml-4 md:ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow print:shadow-none print:border-l-2 print:border-gray-400 print:ml-4">
+                         {/* Adjusted padding for mobile */}
+                        <CardHeader className="p-3 md:p-4 print:p-3">
+                             {/* Adjusted title size and gap */}
+                            <CardTitle className="text-lg md:text-xl flex items-center gap-1.5 md:gap-2 print:text-lg">
+                                <MapPinIcon className="h-5 w-5 md:h-6 md:w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0 space-y-3 print:p-3 print:pt-0 print:space-y-2">
+                         {/* Adjusted padding and text size for mobile */}
+                        <CardContent className="p-3 md:p-4 pt-0 space-y-3 print:p-3 print:pt-0 print:space-y-2">
                             <div>
-                                <h4 className="font-semibold mb-1.5 text-foreground/90 text-base print:text-sm print:mb-1">Activities:</h4>
-                                <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-base print:text-sm print:space-y-0.5">
+                                <h4 className="font-semibold mb-1.5 text-foreground/90 text-sm md:text-base print:text-sm print:mb-1">Activities:</h4>
+                                <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm md:text-base print:text-sm print:space-y-0.5">
                                 {dayPlan.activities?.map((activity, actIndex) => (
                                     <li key={actIndex}>{activity}</li>
                                 ))}
@@ -523,11 +543,12 @@ export function ItineraryPlanner() {
                             </div>
                             {dayPlan.hotelRecommendations && dayPlan.hotelRecommendations.length > 0 && (
                                 <div>
-                                    <Separator className="my-3 print:my-2" />
-                                    <h4 className="font-semibold mb-1.5 text-foreground/90 text-base flex items-center gap-1.5 print:text-sm print:mb-1">
-                                        <Hotel className="h-5 w-5 text-primary print:h-4 print:w-4 print:text-gray-700" /> Hotel Recommendations:
+                                    <Separator className="my-2 md:my-3 print:my-2" />
+                                    {/* Adjusted heading size and gap */}
+                                    <h4 className="font-semibold mb-1.5 text-foreground/90 text-sm md:text-base flex items-center gap-1 print:text-sm print:mb-1">
+                                        <Hotel className="h-4 w-4 md:h-5 md:w-5 text-primary print:h-4 print:w-4 print:text-gray-700" /> Hotel Recommendations:
                                     </h4>
-                                    <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-base print:text-sm print:space-y-0.5">
+                                    <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm md:text-base print:text-sm print:space-y-0.5">
                                     {dayPlan.hotelRecommendations.map((hotel, hotelIndex) => (
                                         <li key={hotelIndex}>{hotel}</li>
                                     ))}
@@ -541,7 +562,6 @@ export function ItineraryPlanner() {
                 </CardContent>
              </div>
             </Card>
-            {/* Modification Section - REMOVED FROM HERE */}
             </>
           )}
           {itinerary && itinerary.itinerary.length === 0 && !isLoading && (
