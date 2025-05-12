@@ -1,14 +1,14 @@
 import Link from 'next/link';
-import { MapPinned, Route, Leaf, LogIn, Search, Menu, Mountain, Home } from 'lucide-react'; // Added Home icon
+import { MapPinned, Route, LogIn, Search, Menu, Mountain, Home } from 'lucide-react'; // Added Home icon, removed Leaf
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 
 const navItems = [
-  { href: '/', label: 'Home', icon: Home }, // Added Home link
+  { href: '/', label: 'Home', icon: Home },
   { href: '/districts', label: 'Districts', icon: MapPinned },
   { href: '/plan-trip', label: 'Plan Your Trip', icon: Route },
-  { href: '/sustainability', label: 'Sustainability', icon: Leaf },
+  // { href: '/sustainability', label: 'Sustainability', icon: Leaf }, // Removed sustainability
 ];
 
 export function Header() {
