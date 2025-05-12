@@ -1,13 +1,14 @@
 import Link from 'next/link';
-import { MapPinned, Route, Leaf, LogIn, Search, Menu, Mountain } from 'lucide-react'; // Updated icons
+import { MapPinned, Route, Leaf, LogIn, Search, Menu, Mountain, Home } from 'lucide-react'; // Added Home icon
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
 
 const navItems = [
+  { href: '/', label: 'Home', icon: Home }, // Added Home link
   { href: '/districts', label: 'Districts', icon: MapPinned },
   { href: '/plan-trip', label: 'Plan Your Trip', icon: Route },
-  { href: '/sustainability', label: 'Sustainability', icon: Leaf }, // Added Sustainability
+  { href: '/sustainability', label: 'Sustainability', icon: Leaf },
 ];
 
 export function Header() {
@@ -17,7 +18,7 @@ export function Header() {
         <Link href="/" className="flex items-center gap-2">
           {/* Replace with a proper logo SVG if available */}
           {/* Using Mountain as a placeholder, adjust as needed */}
-          <Mountain className="h-8 w-8 text-primary" /> 
+          <Mountain className="h-8 w-8 text-primary" />
           <span className="text-2xl font-bold tracking-tight text-primary">Visit Nepal</span>
         </Link>
 
@@ -26,8 +27,9 @@ export function Header() {
             <Link
               key={item.label}
               href={item.href}
-              className="transition-colors hover:text-accent"
+              className="transition-colors hover:text-accent flex items-center gap-1.5" // Added flex for icon alignment
             >
+               <item.icon className="h-4 w-4" /> {/* Added icon */}
               {item.label}
             </Link>
           ))}
@@ -41,13 +43,15 @@ export function Header() {
             </Link>
           </Button>
           <Button variant="default" className="bg-accent hover:bg-accent/90 text-accent-foreground" asChild>
-            <Link href="/districts"> {/* Explore Now linking to districts */}
+             {/* Changed Explore Now to point to Plan Trip */}
+            <Link href="/plan-trip">
               <Search className="mr-2 h-4 w-4" />
-              Explore Now
+              Start Planning
             </Link>
           </Button>
         </div>
 
+        {/* Mobile Menu */}
         <div className="md:hidden">
           <Sheet>
             <SheetTrigger asChild>
@@ -89,9 +93,10 @@ export function Header() {
                     </SheetClose>
                     <SheetClose asChild>
                         <Button variant="default" className="bg-accent hover:bg-accent/90 text-accent-foreground w-full" asChild>
-                            <Link href="/districts">
+                            {/* Changed Explore Now to point to Plan Trip */}
+                            <Link href="/plan-trip">
                             <Search className="mr-2 h-4 w-4" />
-                            Explore Now
+                            Start Planning
                             </Link>
                         </Button>
                     </SheetClose>

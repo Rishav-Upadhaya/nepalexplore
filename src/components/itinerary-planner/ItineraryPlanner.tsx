@@ -12,16 +12,32 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { aiItineraryTool, type AiItineraryToolOutput } from '@/ai/flows/ai-itinerary-tool';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Route, CalendarDays, DollarSign, MapPinIcon, Sparkles, ListChecks, Info, FileText } from 'lucide-react';
+import { Loader2, Route, CalendarDays, DollarSign, MapPinIcon, Sparkles, ListChecks, Info, FileText, Shuffle, Edit } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 
+// Define schema for both types
 const formSchema = z.object({
-  interests: z.string().min(10, { message: "Please describe your interests (min 10 characters)." }),
+  itineraryType: z.enum(["custom", "random"], { required_error: "Please select an itinerary type." }),
+  interests: z.string().optional(), // Optional for random
   duration: z.coerce.number().min(1, { message: "Duration must be at least 1 day." }).max(30, { message: "Duration cannot exceed 30 days."}),
   budget: z.enum(["low", "medium", "high"], { required_error: "Please select a budget." }),
   startPoint: z.string().min(3, { message: "Starting point must be at least 3 characters." }),
-});
+  endPoint: z.string().optional(),
+  mustVisitPlaces: z.string().optional(),
+}).refine(data => {
+    // Require interests for custom itinerary
+    if (data.itineraryType === 'custom' && (!data.interests || data.interests.length < 10)) {
+      return false;
+    }
+    return true;
+  }, {
+    message: "Please describe your interests (min 10 characters) for a custom itinerary.",
+    path: ["interests"], // Path to the field to attach the error message
+  });
+
 
 export function ItineraryPlanner() {
   const [itinerary, setItinerary] = useState<AiItineraryToolOutput | null>(null);
@@ -32,23 +48,36 @@ export function ItineraryPlanner() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      itineraryType: "custom", // Default to custom
       interests: "",
       duration: 7,
       budget: undefined,
       startPoint: "Kathmandu",
+      endPoint: "",
+      mustVisitPlaces: "",
     },
   });
+
+  const itineraryType = form.watch("itineraryType");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     setError(null);
     setItinerary(null);
     try {
-      const result = await aiItineraryTool(values);
+      // Clear optional fields if 'random' is selected
+      const payload = values.itineraryType === 'random' ? {
+        ...values,
+        interests: undefined, // Ensure interests are not sent for random
+        endPoint: undefined,
+        mustVisitPlaces: undefined,
+      } : values;
+
+      const result = await aiItineraryTool(payload);
       setItinerary(result);
       toast({
         title: "Itinerary Generated!",
-        description: "Your personalized travel plan is ready.",
+        description: `Your ${values.itineraryType} travel plan is ready.`,
       });
     } catch (e) {
       console.error(e);
@@ -68,76 +97,176 @@ export function ItineraryPlanner() {
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold tracking-tight text-primary">AI-Powered Itinerary Builder</h1>
         <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Let our AI craft the perfect Nepal adventure for you. Just tell us your preferences!
+          Choose your style: craft a detailed custom trip or let AI surprise you with a random adventure!
         </p>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
         <Card className="lg:col-span-1 shadow-xl sticky top-24 border border-primary/20">
           <CardHeader className="bg-primary/5 p-6">
-            <CardTitle className="flex items-center gap-2 text-primary"><Route className="h-7 w-7" /> Plan Your Dream Trip</CardTitle>
-            <CardDescription className="text-base">Fill in your preferences below to get a custom itinerary.</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-primary"><Route className="h-7 w-7" /> Plan Your Trip</CardTitle>
+            <CardDescription className="text-base">Select your preferences below.</CardDescription>
           </CardHeader>
           <CardContent className="p-6">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div>
-                <Label htmlFor="interests" className="font-semibold text-base">Your Interests</Label>
-                <Textarea
-                  id="interests"
-                  placeholder="e.g., trekking, culture, wildlife, spiritual experiences, photography..."
-                  {...form.register("interests")}
-                  className="mt-1 min-h-[100px] text-base"
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="itineraryType"
+                  render={({ field }) => (
+                    <FormItem className="space-y-3">
+                      <FormLabel className="font-semibold text-base">Choose Itinerary Type</FormLabel>
+                      <FormControl>
+                        <RadioGroup
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          className="flex space-x-4"
+                        >
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="custom" id="custom" />
+                            </FormControl>
+                            <FormLabel htmlFor="custom" className="font-medium text-base flex items-center gap-1.5 cursor-pointer">
+                               <Edit className="h-4 w-4"/> Custom Plan
+                            </FormLabel>
+                          </FormItem>
+                          <FormItem className="flex items-center space-x-2 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value="random" id="random" />
+                            </FormControl>
+                            <FormLabel htmlFor="random" className="font-medium text-base flex items-center gap-1.5 cursor-pointer">
+                                <Shuffle className="h-4 w-4"/> Random Adventure
+                            </FormLabel>
+                          </FormItem>
+                        </RadioGroup>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                {form.formState.errors.interests && <p className="text-sm text-destructive mt-1">{form.formState.errors.interests.message}</p>}
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="duration" className="font-semibold text-base">Duration (days)</Label>
-                  <Input
-                    id="duration"
-                    type="number"
-                    {...form.register("duration")}
-                    className="mt-1 h-11 text-base"
-                  />
-                  {form.formState.errors.duration && <p className="text-sm text-destructive mt-1">{form.formState.errors.duration.message}</p>}
-                </div>
-                 <div>
-                  <Label htmlFor="budget" className="font-semibold text-base">Budget</Label>
-                  <Select onValueChange={(value) => form.setValue("budget", value as "low" | "medium" | "high")} defaultValue={form.getValues("budget")}>
-                    <SelectTrigger id="budget" className="mt-1 h-11 text-base">
-                      <SelectValue placeholder="Select budget" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low" className="text-base">Low</SelectItem>
-                      <SelectItem value="medium" className="text-base">Medium</SelectItem>
-                      <SelectItem value="high" className="text-base">High</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {form.formState.errors.budget && <p className="text-sm text-destructive mt-1">{form.formState.errors.budget.message}</p>}
-                </div>
-              </div>
 
-              <div>
-                <Label htmlFor="startPoint" className="font-semibold text-base">Starting Point</Label>
-                <Input
-                  id="startPoint"
-                  placeholder="e.g., Kathmandu, Pokhara"
-                  {...form.register("startPoint")}
-                  className="mt-1 h-11 text-base"
+                {/* Common Fields */}
+                 <FormField
+                  control={form.control}
+                  name="startPoint"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="font-semibold text-base">Starting Point</FormLabel>
+                      <FormControl>
+                        <Input placeholder="e.g., Kathmandu, Pokhara" {...field} className="h-11 text-base"/>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                {form.formState.errors.startPoint && <p className="text-sm text-destructive mt-1">{form.formState.errors.startPoint.message}</p>}
-              </div>
 
-              <Button type="submit" disabled={isLoading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
-                {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                {isLoading ? "Generating..." : "Generate Itinerary"}
-                <Sparkles className="ml-2 h-5 w-5" />
-              </Button>
-            </form>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="duration"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="font-semibold text-base">Duration (days)</FormLabel>
+                            <FormControl>
+                            <Input type="number" {...field} className="h-11 text-base"/>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="budget"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="font-semibold text-base">Budget</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger className="h-11 text-base">
+                                <SelectValue placeholder="Select budget" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="low" className="text-base">Low</SelectItem>
+                                <SelectItem value="medium" className="text-base">Medium</SelectItem>
+                                <SelectItem value="high" className="text-base">High</SelectItem>
+                            </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+
+
+                {/* Custom Fields */}
+                {itineraryType === 'custom' && (
+                  <>
+                    <FormField
+                      control={form.control}
+                      name="interests"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-base">Your Interests</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="e.g., trekking in Annapurna, exploring ancient temples in Kathmandu, spotting wildlife in Chitwan..."
+                              className="min-h-[100px] text-base"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="endPoint"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., Pokhara, Lukla (leave blank if same as start)" {...field} className="h-11 text-base"/>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={form.control}
+                      name="mustVisitPlaces"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="font-semibold text-base">Must-Visit Places/Regions (Optional)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="List any specific places or regions you definitely want to include, e.g., Lumbini, Everest Base Camp region, Bardia National Park"
+                              className="min-h-[80px] text-base"
+                              {...field}
+                            />
+                          </FormControl>
+                           <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </>
+                )}
+
+                 {/* Random Specific Info/Fields (if any needed in future) */}
+                 {/* {itineraryType === 'random' && ( <p className="text-sm text-muted-foreground">Let AI choose the best route for you!</p> )} */}
+
+
+                <Button type="submit" disabled={isLoading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
+                  {isLoading && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                  {isLoading ? "Generating..." : (itineraryType === 'custom' ? "Generate Custom Itinerary" : "Generate Random Adventure")}
+                  <Sparkles className="ml-2 h-5 w-5" />
+                </Button>
+              </form>
+            </Form>
           </CardContent>
         </Card>
 
+        {/* Itinerary Display Area */}
         <div className="lg:col-span-2">
           {isLoading && (
              <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
@@ -158,7 +287,9 @@ export function ItineraryPlanner() {
           {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
             <Card className="shadow-xl border">
               <CardHeader className="bg-primary/5 p-6">
-                <CardTitle className="text-2xl flex items-center gap-2 text-primary"><ListChecks className="h-8 w-8"/> Your Custom Itinerary</CardTitle>
+                <CardTitle className="text-2xl flex items-center gap-2 text-primary">
+                  <ListChecks className="h-8 w-8"/> Your {itineraryType === 'custom' ? 'Custom' : 'Random'} Itinerary
+                </CardTitle>
                 <CardDescription className="text-base">Here's a day-by-day plan for your adventure in Nepal.</CardDescription>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
@@ -207,7 +338,7 @@ export function ItineraryPlanner() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-lg">
-                  Fill out your preferences on the left, and let our AI craft your personalized Nepal itinerary!
+                  Choose 'Custom Plan' or 'Random Adventure' on the left and let AI craft your Nepal itinerary!
                 </CardDescription>
               </CardContent>
             </Card>
