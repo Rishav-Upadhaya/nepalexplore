@@ -152,7 +152,7 @@ export {
   SelectValue,
   SelectTrigger,
   SelectContent,
-  SelectLabel,
+  SelectLabel, // Ensure SelectLabel is exported
   SelectItem,
   SelectSeparator,
   SelectScrollUpButton,

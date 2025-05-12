@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { aiItineraryTool, type AiItineraryToolOutput } from '@/ai/flows/ai-itinerary-tool';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2, Route, CalendarDays, DollarSign, MapPinIcon, Sparkles, ListChecks, Info, FileText, Shuffle, Edit } from 'lucide-react';
@@ -17,6 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { nepalDistrictsByRegion, type DistrictName } from '@/types'; // Import the grouped districts
 
 // Define schema for both types
 const formSchema = z.object({
@@ -24,7 +25,7 @@ const formSchema = z.object({
   interests: z.string().optional(), // Optional for random
   duration: z.coerce.number().min(1, { message: "Duration must be at least 1 day." }).max(30, { message: "Duration cannot exceed 30 days."}),
   budget: z.enum(["low", "medium", "high"], { required_error: "Please select a budget." }),
-  startPoint: z.string().min(3, { message: "Starting point must be at least 3 characters." }),
+  startPoint: z.string({required_error: "Please select a starting point."}).min(1, { message: "Please select a starting point." }),
   endPoint: z.string().optional(),
   mustVisitPlaces: z.string().optional(),
 }).refine(data => {
@@ -52,7 +53,7 @@ export function ItineraryPlanner() {
       interests: "",
       duration: 7,
       budget: undefined,
-      startPoint: "Kathmandu",
+      startPoint: "Kathmandu", // Default starting point
       endPoint: "",
       mustVisitPlaces: "",
     },
@@ -71,7 +72,11 @@ export function ItineraryPlanner() {
         interests: undefined, // Ensure interests are not sent for random
         endPoint: undefined,
         mustVisitPlaces: undefined,
-      } : values;
+      } : {
+          ...values,
+          endPoint: values.endPoint === "" ? undefined : values.endPoint, // Send undefined if empty
+          mustVisitPlaces: values.mustVisitPlaces === "" ? undefined : values.mustVisitPlaces, // Send undefined if empty
+        };
 
       const result = await aiItineraryTool(payload);
       setItinerary(result);
@@ -81,10 +86,11 @@ export function ItineraryPlanner() {
       });
     } catch (e) {
       console.error(e);
-      setError("Failed to generate itinerary. Please try again.");
+      const errorMessage = e instanceof Error ? e.message : "Failed to generate itinerary. Please try again.";
+      setError(errorMessage);
       toast({
         title: "Error",
-        description: "Could not generate itinerary.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -147,17 +153,31 @@ export function ItineraryPlanner() {
 
                 {/* Common Fields */}
                  <FormField
-                  control={form.control}
-                  name="startPoint"
-                  render={({ field }) => (
+                    control={form.control}
+                    name="startPoint"
+                    render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="font-semibold text-base">Starting Point</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g., Kathmandu, Pokhara" {...field} className="h-11 text-base"/>
-                      </FormControl>
-                      <FormMessage />
+                        <FormLabel className="font-semibold text-base">Starting Point</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger className="h-11 text-base">
+                                    <SelectValue placeholder="Select starting district" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
+                                    <SelectGroup key={region}>
+                                        <SelectLabel className="font-bold">{region}</SelectLabel>
+                                        {districts.map(d => (
+                                            <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
+                                        ))}
+                                    </SelectGroup>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
                     </FormItem>
-                  )}
+                    )}
                 />
 
                 <div className="grid grid-cols-2 gap-4">
@@ -219,18 +239,33 @@ export function ItineraryPlanner() {
                         </FormItem>
                       )}
                     />
-                     <FormField
-                      control={form.control}
-                      name="endPoint"
-                      render={({ field }) => (
+                    <FormField
+                        control={form.control}
+                        name="endPoint"
+                        render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Pokhara, Lukla (leave blank if same as start)" {...field} className="h-11 text-base"/>
-                          </FormControl>
-                          <FormMessage />
+                            <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
+                             <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                                <FormControl>
+                                    <SelectTrigger className="h-11 text-base">
+                                        <SelectValue placeholder="Select ending district (optional)" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                     <SelectItem value="" className="text-base italic">None (leave blank)</SelectItem>
+                                    {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
+                                        <SelectGroup key={region}>
+                                            <SelectLabel className="font-bold">{region}</SelectLabel>
+                                            {districts.map(d => (
+                                                <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
                         </FormItem>
-                      )}
+                        )}
                     />
                      <FormField
                       control={form.control}
@@ -240,7 +275,7 @@ export function ItineraryPlanner() {
                           <FormLabel className="font-semibold text-base">Must-Visit Places/Regions (Optional)</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="List any specific places or regions you definitely want to include, e.g., Lumbini, Everest Base Camp region, Bardia National Park"
+                              placeholder="List any specific places or regions you definitely want to include. E.g., Lumbini (West Nepal), Everest Base Camp region (East Nepal), Bardia National Park (West Nepal)."
                               className="min-h-[80px] text-base"
                               {...field}
                             />
@@ -288,17 +323,25 @@ export function ItineraryPlanner() {
             <Card className="shadow-xl border">
               <CardHeader className="bg-primary/5 p-6">
                 <CardTitle className="text-2xl flex items-center gap-2 text-primary">
-                  <ListChecks className="h-8 w-8"/> Your {itineraryType === 'custom' ? 'Custom' : 'Random'} Itinerary
+                  <ListChecks className="h-8 w-8"/> Your {form.getValues('itineraryType') === 'custom' ? 'Custom' : 'Random'} Itinerary
                 </CardTitle>
                 <CardDescription className="text-base">Here's a day-by-day plan for your adventure in Nepal.</CardDescription>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
+                 {/* Timeline View Placeholder */}
+                 <div className="p-4 border rounded-lg bg-muted/50 text-center">
+                    <h3 className="text-lg font-semibold text-primary mb-2">Interactive Timeline View</h3>
+                    <p className="text-muted-foreground text-sm">(Coming Soon: Visualize your itinerary on an interactive timeline!)</p>
+                  </div>
                 {itinerary.itinerary.map((dayPlan, index) => (
-                  <div key={index} className="relative pl-10 group">
-                     <span className="absolute left-0 top-1 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg shadow">
+                   <div key={index} className="relative pl-10 group">
+                     <span className="absolute left-[-2px] top-1 flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg shadow z-10">
                        {dayPlan.day}
                      </span>
-                     {index < itinerary.itinerary.length -1 && <div className="absolute left-[19px] top-12 bottom-0 w-0.5 bg-border group-last:hidden" />}
+                     {/* Vertical line connecting days */}
+                     {index < itinerary.itinerary.length - 1 && (
+                        <div className="absolute left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden" />
+                     )}
                     <Card className="ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow">
                       <CardHeader className="p-4">
                         <CardTitle className="text-xl flex items-center gap-2">
