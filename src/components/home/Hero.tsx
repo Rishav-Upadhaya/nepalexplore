@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowRight, Map } from 'lucide-react'; // Changed Globe to Map
+import { ArrowRight, Map } from 'lucide-react'; // Replaced MapChart with Map
 
 export function Hero() {
   return (
@@ -24,21 +24,22 @@ export function Hero() {
       <div className="container mt-16 md:mt-24">
         {/* Updated Interactive Map Section for 2D */}
         <div className="relative aspect-[16/7] bg-muted/50 rounded-xl shadow-2xl overflow-hidden group p-8 flex flex-col items-center justify-center text-center border">
-           <Map className="h-16 w-16 text-primary mb-6 opacity-50" /> {/* Changed Icon */}
-           <h2 className="text-3xl md:text-4xl font-bold text-primary">Interactive 2D Map of Nepal</h2> {/* Updated Title */}
+           <Map className="h-16 w-16 text-primary mb-6 opacity-50" /> {/* Replaced MapChart with Map */}
+           <h2 className="text-3xl md:text-4xl font-bold text-primary">Interactive Map of Nepal</h2>
            <p className="mt-3 text-muted-foreground max-w-xl">
-            (Coming Soon) Explore Nepal with our interactive 2D map. Discover districts, landmarks, and points of interest with clickable hotspots and detailed information. {/* Updated Description */}
+            (Coming Soon) Explore Nepal with our interactive map. Discover districts, landmarks, and points of interest with clickable hotspots and detailed information.
            </p>
             <div className="mt-4 text-sm text-muted-foreground/70">
-                This will be replaced by an interactive 2D map component (e.g., using Mapbox GL JS or Leaflet).
+                [ Interactive Map Component Placeholder ]
             </div>
+             {/* Optional background image for visual context */}
              <Image
-              src="https://picsum.photos/seed/nepalmap2d/1200/400" // Potentially new seed for a different image
-              alt="Interactive 2D map of Nepal concept" // Updated Alt Text
-              data-ai-hint="Nepal map 2d" // Updated Hint
+              src="https://picsum.photos/seed/nepalmap2d/1200/400"
+              alt="Map of Nepal background concept"
+              data-ai-hint="Nepal map background"
               fill
               className="object-cover opacity-10 group-hover:opacity-20 transition-opacity duration-500 -z-10"
-              priority
+              priority // Keep priority if this is above the fold
             />
         </div>
       </div>
