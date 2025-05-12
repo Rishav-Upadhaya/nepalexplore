@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -74,8 +75,9 @@ export function ItineraryPlanner() {
         mustVisitPlaces: undefined,
       } : {
           ...values,
-          endPoint: values.endPoint === "" ? undefined : values.endPoint, // Send undefined if empty
-          mustVisitPlaces: values.mustVisitPlaces === "" ? undefined : values.mustVisitPlaces, // Send undefined if empty
+          // Handle the "none" value for optional dropdowns
+          endPoint: values.endPoint === "none" || values.endPoint === "" ? undefined : values.endPoint,
+          mustVisitPlaces: values.mustVisitPlaces === "none" || values.mustVisitPlaces === "" ? undefined : values.mustVisitPlaces,
         };
 
       const result = await aiItineraryTool(payload);
@@ -252,7 +254,8 @@ export function ItineraryPlanner() {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                     <SelectItem value="" className="text-base italic">None (leave blank)</SelectItem>
+                                    {/* Use a non-empty value for the "None" option */}
+                                     <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
                                     {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
                                         <SelectGroup key={region}>
                                             <SelectLabel className="font-bold">{region}</SelectLabel>
@@ -273,13 +276,35 @@ export function ItineraryPlanner() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="font-semibold text-base">Must-Visit Places/Regions (Optional)</FormLabel>
-                          <FormControl>
+                          {/* Using Textarea for flexibility as multiple places might be listed */}
+                           <FormControl>
                             <Textarea
-                              placeholder="List any specific places or regions you definitely want to include. E.g., Lumbini (West Nepal), Everest Base Camp region (East Nepal), Bardia National Park (West Nepal)."
+                              placeholder="List specific places or regions, e.g., Lumbini, Everest Base Camp region, Bardia..."
                               className="min-h-[80px] text-base"
                               {...field}
                             />
                           </FormControl>
+                          {/*
+                          Alternative using Select (less flexible if user wants multiple or specific non-district places):
+                          <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                              <FormControl>
+                                  <SelectTrigger className="h-11 text-base">
+                                      <SelectValue placeholder="Select must-visit district (optional)" />
+                                  </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                   <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
+                                  {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
+                                      <SelectGroup key={region}>
+                                          <SelectLabel className="font-bold">{region}</SelectLabel>
+                                          {districts.map(d => (
+                                              <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
+                                          ))}
+                                      </SelectGroup>
+                                  ))}
+                              </SelectContent>
+                          </Select>
+                           */}
                            <FormMessage />
                         </FormItem>
                       )}
