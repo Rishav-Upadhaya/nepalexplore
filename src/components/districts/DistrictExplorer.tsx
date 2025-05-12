@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { suggestHiddenGems, type SuggestHiddenGemsOutput } from '@/ai/flows/hidden-gems-suggestions';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, MapPin, Lightbulb, Building, Trees, Utensils, Sparkles, Info } from 'lucide-react';
+import { Loader2, MapPin, Lightbulb, Building, Trees, Utensils, Sparkles, Info, Compass } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { nepalDistricts, type DistrictName } from '@/types';
 import Image from 'next/image';
