@@ -71,9 +71,11 @@ const prompt = ai.definePrompt({
   prompt: `You are a creative and knowledgeable travel expert specializing in crafting exciting itineraries for Nepal. Generate a detailed day-by-day travel plan based on the user's request.
 
 **CRITICAL INSTRUCTIONS:**
-1.  **List activities as bullet points:** For the 'activities' field, provide a JSON array of strings, where each string is a distinct activity or step for the day. DO NOT provide a single paragraph.
-2.  **Hotel Recommendations:** If the plan for the day involves staying overnight in a location (especially in cities or major towns), provide 2-3 *specific*, *realistic* hotel names in the 'hotelRecommendations' field (as a JSON array of strings). Mention the hotel name and a brief category if possible (e.g., "Hotel Yak & Yeti (Luxury)", "Thamel Eco Resort (Mid-Range)", "Zostel Kathmandu (Budget/Hostel)"). If it's a trekking day staying in a tea house, you can omit specific recommendations or just mention "Stay at a local tea house". Only include recommendations if an overnight stay is implied for that day's location.
-3.  **Budget Alignment:** Ensure suggested activities and hotels generally align with the overall trip budget range provided by the user. For example, don't suggest primarily luxury hotels for a "< $500 USD" budget.
+1.  **Expand Beyond the Usual:** While Kathmandu, Pokhara, and Chitwan are popular, actively suggest *at least one or two different locations* if the duration allows (e.g., 5+ days) or if user interests suggest it (e.g., 'trekking' might imply Solukhumbu or Annapurna regions, 'culture' might imply Lumbini, Janakpur, or Panauti). Create a logical route incorporating these diverse locations.
+2.  **List activities as bullet points:** For the 'activities' field, provide a JSON array of strings, where each string is a distinct activity or step for the day. DO NOT provide a single paragraph.
+3.  **Hotel Recommendations:** If the plan for the day involves staying overnight in a location (especially in cities or major towns), provide 2-3 *specific*, *realistic* hotel names in the 'hotelRecommendations' field (as a JSON array of strings). Mention the hotel name and a brief category if possible (e.g., "Hotel Yak & Yeti (Luxury)", "Thamel Eco Resort (Mid-Range)", "Zostel Kathmandu (Budget/Hostel)"). If it's a trekking day staying in a tea house, you can omit specific recommendations or just mention "Stay at a local tea house". Only include recommendations if an overnight stay is implied for that day's location.
+4.  **Budget Alignment:** Ensure suggested activities and hotels generally align with the overall trip budget range provided by the user. For example, don't suggest primarily luxury hotels for a "< $500 USD" budget.
+5.  **Respect Must-Visit:** If the user specifies 'mustVisitPlaces', ensure these are included logically within the itinerary.
 
 {{#if interests}}
 **Itinerary Type:** Custom Plan
@@ -86,7 +88,7 @@ const prompt = ai.definePrompt({
 {{#if endPoint}}*   End Point: {{{endPoint}}}{{/if}}
 {{#if mustVisitPlaces}}*   Must-Visit Places/Regions: {{{mustVisitPlaces}}}{{/if}}
 
-Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically and incorporates the must-visit locations if provided. Follow the critical instructions above, paying close attention to the budget range when suggesting activities and hotels.
+Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically, incorporates the must-visit locations if provided, and includes diverse locations beyond just Kathmandu/Pokhara/Chitwan as appropriate (see critical instruction #1). Follow the other critical instructions above, paying close attention to budget.
 
 {{else}}
 **Itinerary Type:** Random Adventure
@@ -96,7 +98,7 @@ Generate a personalized itinerary considering all these preferences. Ensure the 
 *   Budget Range (Total Trip): {{{budget}}}
 *   Start Point: {{{startPoint}}}
 
-Generate a plausible and exciting random itinerary starting from {{startPoint}} for {{duration}} days, suitable for the specified total trip budget range: {{budget}}. Focus on a balanced mix of popular highlights and potentially some interesting lesser-known spots accessible from the route. Make it sound like a fun adventure! Follow the critical instructions above, ensuring suggestions align with the overall budget.
+Generate a plausible and exciting random itinerary starting from {{startPoint}} for {{duration}} days, suitable for the specified total trip budget range: {{budget}}. Focus on a balanced mix of popular highlights BUT **actively include at least one or two lesser-known or different regions** accessible from the route to make it a true adventure (see critical instruction #1). Follow the other critical instructions above, ensuring suggestions align with the overall budget.
 {{/if}}
 
 **Output Format:**
@@ -105,17 +107,17 @@ Provide the output as a JSON array of objects. Each object must represent a day 
 Example for one day:
 {
   "day": 3,
-  "location": "Chitwan National Park",
+  "location": "Bandipur",
   "activities": [
-    "Embark on an early morning jeep safari adventure!",
-    "Keep your eyes peeled for rhinos, deer, and maybe even a Royal Bengal Tiger.",
-    "Afternoon canoe ride on the Rapti River, spotting crocodiles and diverse birdlife.",
-    "Evening cultural show by the local Tharu community."
+    "Travel from Pokhara to the charming hilltop town of Bandipur.",
+    "Explore the preserved Newari architecture and traffic-free main street.",
+    "Enjoy panoramic sunset views over the Himalayas.",
+    "Experience a traditional Newari dinner."
   ],
   "hotelRecommendations": [
-     "Barahi Jungle Lodge (Luxury)",
-     "Hotel Parkland (Mid-Range)",
-     "Wild Horizons Guest House (Budget)"
+     "The Old Inn (Heritage/Mid-Range)",
+     "Gaun Ghar (Boutique/Mid-Range)",
+     "Bandipur Mountain Resort (Budget/Standard)"
   ]
 }
 `,
@@ -141,3 +143,4 @@ const aiItineraryToolFlow = ai.defineFlow(
     return output!;
   }
 );
+
