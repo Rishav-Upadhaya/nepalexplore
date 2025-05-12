@@ -43,7 +43,7 @@ const AiItineraryToolInputSchema = z.object({
   endPoint: z
     .string()
     .optional()
-    .describe('The desired end point of the trip (optional, for custom type). For random adventures, this will be the same as the start point.'),
+    .describe('The desired end point of the trip (optional). If not provided for Random Adventure, it will be the same as the start point.'), // Updated description
   mustVisitPlaces: z
     .string()
     .optional()
@@ -79,14 +79,17 @@ const prompt = ai.definePrompt({
   prompt: `You are a creative and knowledgeable travel expert specializing in crafting exciting itineraries for Nepal.
 Generate or modify a detailed day-by-day travel plan based on the user's request. The trip duration can be any number of days, there is no maximum limit.
 
-**CRITICAL INSTRUCTIONS (Apply to both new and modified itineraries):**
+**CRITICAL INSTRUCTIONS (Apply to all itineraries):**
 1.  **Expand Beyond the Usual:** While Kathmandu, Pokhara, and Chitwan are popular, actively suggest *at least one or two different locations* if the duration allows (e.g., 5+ days) or if user interests suggest it (e.g., 'trekking' might imply Solukhumbu or Annapurna regions, 'culture' might imply Lumbini, Janakpur, or Panauti). Create a logical route incorporating these diverse locations. For **longer durations (e.g., 15+ days)**, aim to include locations from *different regions* of Nepal (East, Central, West) if travel is feasible within the timeframe and aligns with user interests/budget. Show the vastness and diversity of Nepal.
 2.  **List activities as bullet points:** For the 'activities' field, provide a JSON array of strings, where each string is a distinct activity or step for the day. DO NOT provide a single paragraph.
 3.  **Hotel Recommendations:** If the plan for the day involves staying overnight in a location (especially in cities or major towns), provide 2-3 *specific*, *realistic* hotel names in the 'hotelRecommendations' field (as a JSON array of strings). Mention the hotel name and a brief category if possible (e.g., "Hotel Yak & Yeti (Luxury)", "Thamel Eco Resort (Mid-Range)", "Zostel Kathmandu (Budget/Hostel)"). If it's a trekking day staying in a tea house, you can omit specific recommendations or just mention "Stay at a local tea house". Only include recommendations if an overnight stay is implied for that day's location.
 4.  **Budget Alignment:** Ensure suggested activities and hotels generally align with the overall trip budget range provided by the user. For example, don't suggest primarily luxury hotels for a "< $500 USD" budget.
-5.  **Respect Must-Visit:** If the user specifies 'mustVisitPlaces', ensure these are included logically within the itinerary.
-6.  **Maintain Overall Context:** When modifying, try to keep the original duration and budget unless the modification request explicitly asks to change them. The modified itinerary should still make sense as a whole.
+5.  **Respect Must-Visit (Custom Only):** If the user specifies 'mustVisitPlaces' (for custom itineraries), ensure these are included logically within the itinerary.
+6.  **Maintain Overall Context (Modifications):** When modifying, try to keep the original duration and budget unless the modification request explicitly asks to change them. The modified itinerary should still make sense as a whole.
 7.  **Route Diversity:** For all itineraries, especially random ones, aim to create routes that avoid excessive backtracking or repetition of locations unless it's logically necessary (e.g., passing through a hub) or explicitly requested by the user in a modification. Showcase a variety of experiences and places.
+8.  **End Point Handling:**
+    *   **Custom:** If an `endPoint` is provided, the itinerary should conclude there. If not, it can end anywhere logical based on the route.
+    *   **Random:** If an `endPoint` is provided and it's different from `startPoint`, the itinerary should conclude at the specified `endPoint`. If no `endPoint` is provided, the itinerary MUST end back at the `startPoint`.
 
 {{#if previousItinerary}}
 **MODIFICATION TASK**
@@ -109,7 +112,7 @@ Now, the user has the following modification request:
 **Modification Request: "{{{modificationRequest}}}"**
 
 Please carefully review the previous itinerary and the modification request. Update the itinerary based on this request.
-*   Adhere to all CRITICAL INSTRUCTIONS mentioned above.
+*   Adhere to all CRITICAL INSTRUCTIONS mentioned above, including End Point Handling for the original itinerary type.
 *   The output MUST be the complete revised itinerary in the specified JSON format.
 *   If a request is impossible or significantly compromises the itinerary (e.g., makes it too rushed, exceeds budget drastically without acknowledgement), try your best to accommodate the spirit of the request, or clearly state in an activity for the relevant day why it's not feasible and offer a brief alternative if possible, then continue with the rest of the itinerary. However, prioritize fulfilling the request if it's reasonable.
 *   Ensure the day numbers are sequential and correct in the modified itinerary.
@@ -117,7 +120,7 @@ Please carefully review the previous itinerary and the modification request. Upd
 {{else}}
 **NEW ITINERARY GENERATION TASK**
 
-{{#if interests}}
+{{#if (eq itineraryType "custom")}}
 **Itinerary Type:** Custom Plan
 
 **User Preferences:**
@@ -128,7 +131,7 @@ Please carefully review the previous itinerary and the modification request. Upd
 {{#if endPoint}}*   End Point: {{{endPoint}}}{{/if}}
 {{#if mustVisitPlaces}}*   Must-Visit Places/Regions: {{{mustVisitPlaces}}}{{/if}}
 
-Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically, incorporates the must-visit locations if provided, and includes diverse locations beyond just Kathmandu/Pokhara/Chitwan as appropriate (see critical instruction #1). For longer durations, try to cover more ground across different regions. Follow the other critical instructions above, paying close attention to budget and route diversity.
+Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically, incorporates the must-visit locations if provided, and includes diverse locations beyond just Kathmandu/Pokhara/Chitwan as appropriate (see critical instruction #1). For longer durations, try to cover more ground across different regions. Pay attention to the specified end point if provided (Critical Instruction #8). Follow the other critical instructions above, paying close attention to budget and route diversity.
 
 {{else}}
 **Itinerary Type:** Random Adventure
@@ -137,12 +140,12 @@ Generate a personalized itinerary considering all these preferences. Ensure the 
 *   Duration: {{{duration}}} days (Note: No maximum limit on duration)
 *   Budget Range (Total Trip): {{{budget}}}
 *   Start Point: {{{startPoint}}}
-*   **Important:** This is a round trip. The itinerary MUST end back at the starting point: {{{startPoint}}}.
+{{#if endPoint}}*   **Requested End Point:** {{{endPoint}}} {{else}}*   **Important:** No specific end point requested. The itinerary MUST end back at the starting point: {{{startPoint}}}.{{/if}}
 
 Generate a plausible and exciting random itinerary starting from {{startPoint}} for {{duration}} days, suitable for the specified total trip budget range: {{budget}}.
-*   The trip must conclude at the **startPoint ({{{startPoint}}})**.
+*   **End Point Handling:** Adhere to Critical Instruction #8. If an `endPoint` is provided, conclude there. Otherwise, the trip must conclude at the **startPoint ({{{startPoint}}})**.
 *   Focus on a balanced mix of popular highlights BUT **actively include at least one or two lesser-known or different regions** accessible from the route to make it a true adventure (see critical instruction #1).
-*   For longer durations, aim for wider exploration across Nepal, always returning to {{{startPoint}}}.
+*   For longer durations, aim for wider exploration across Nepal, always ensuring the correct end point based on the user's request.
 *   **Prioritize route diversity (Critical Instruction #7):** Avoid unnecessary repetition of locations or backtracking. Create a varied and interesting journey.
 *   Follow all other critical instructions above, ensuring suggestions align with the overall budget.
 {{/if}}
@@ -180,21 +183,27 @@ const aiItineraryToolFlow = ai.defineFlow(
   async input => {
     let processedInput = { ...input };
 
-    if (input.itineraryType === 'random' && !input.previousItinerary) { // Only for new random itineraries
-        processedInput.endPoint = input.startPoint; // Set endPoint to startPoint for random adventures
-        // Ensure other custom fields are undefined if not modifying
-        processedInput.interests = undefined;
-        processedInput.mustVisitPlaces = undefined;
-    } else {
-        // For custom or modification, ensure optional fields are correctly undefined if empty
-        processedInput.endPoint = input.endPoint === "none" || input.endPoint === "" ? undefined : input.endPoint;
-        processedInput.mustVisitPlaces = input.mustVisitPlaces === "none" || input.mustVisitPlaces === "" ? undefined : input.mustVisitPlaces;
-        processedInput.interests = input.interests || undefined;
+    // General processing for optional fields and 'none'/'empty' values
+    processedInput.endPoint = input.endPoint === "none" || input.endPoint === "" ? undefined : input.endPoint;
+    processedInput.mustVisitPlaces = input.mustVisitPlaces === "none" || input.mustVisitPlaces === "" ? undefined : input.mustVisitPlaces;
+    processedInput.interests = input.interests || undefined;
+
+    // Specific processing for NEW itineraries (not modifications)
+    if (!input.previousItinerary) {
+        if (input.itineraryType === 'random') {
+            // For new random itineraries, ensure interests and mustVisitPlaces are undefined
+            processedInput.interests = undefined;
+            processedInput.mustVisitPlaces = undefined;
+            // End point is handled by the prompt based on whether it's provided or not. No need to force it here.
+        } else if (input.itineraryType === 'custom') {
+            // Nothing specific needed here anymore, general processing handles optional fields.
+        }
     }
+
     // Ensure modification related fields are undefined if not a modification
     processedInput.previousItinerary = input.previousItinerary || undefined;
     processedInput.modificationRequest = input.modificationRequest || undefined;
-    
+
     const {output} = await prompt(processedInput);
     return output!;
   }

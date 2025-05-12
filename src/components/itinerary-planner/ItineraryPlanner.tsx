@@ -30,9 +30,10 @@ const formSchema = z.object({
   duration: z.coerce.number().min(1, { message: "Duration must be at least 1 day." }),
   budget: z.enum(Object.keys(budgetRanges) as [keyof typeof budgetRanges, ...(keyof typeof budgetRanges)[]] , { required_error: "Please select a budget range." }),
   startPoint: z.string({required_error: "Please select a starting point."}).min(1, { message: "Please select a starting point." }),
-  endPoint: z.string().optional(),
+  endPoint: z.string().optional(), // End point is optional for both now
   mustVisitPlaces: z.string().optional(),
 }).refine(data => {
+    // Interest check only applies to custom itinerary
     if (data.itineraryType === 'custom' && (!data.interests || data.interests.length < 10)) {
       return false;
     }
@@ -86,18 +87,13 @@ export function ItineraryPlanner() {
     setOriginalFormValues(values); // Store the form values used for generation
     try {
       const budgetLabel = budgetRanges[values.budget];
-      const payload: AiItineraryToolInput = values.itineraryType === 'random' ? {
+      const payload: AiItineraryToolInput = {
         ...values,
         budget: budgetLabel,
-        interests: undefined,
-        endPoint: undefined,
-        mustVisitPlaces: undefined,
-      } : {
-          ...values,
-          budget: budgetLabel,
-          endPoint: values.endPoint === "none" || values.endPoint === "" ? undefined : values.endPoint,
-          mustVisitPlaces: values.mustVisitPlaces === "none" || values.mustVisitPlaces === "" ? undefined : values.mustVisitPlaces,
-        };
+        interests: values.itineraryType === 'custom' ? values.interests : undefined, // Only pass interests for custom
+        endPoint: values.endPoint === "none" || values.endPoint === "" ? undefined : values.endPoint, // Handle 'none' selection for both
+        mustVisitPlaces: values.itineraryType === 'custom' && (values.mustVisitPlaces === "none" || values.mustVisitPlaces === "") ? undefined : values.mustVisitPlaces, // Only pass mustVisit for custom, handle 'none'
+      };
 
       const result = await aiItineraryTool(payload);
       setItinerary(result);
@@ -135,8 +131,9 @@ export function ItineraryPlanner() {
             previousItinerary: itinerary, // Pass the current itinerary
             modificationRequest: modificationData.modificationRequest,
             // Ensure optional fields are correctly set from originalFormValues
+            interests: originalFormValues.itineraryType === 'custom' ? originalFormValues.interests : undefined,
             endPoint: originalFormValues.endPoint === "none" || originalFormValues.endPoint === "" ? undefined : originalFormValues.endPoint,
-            mustVisitPlaces: originalFormValues.mustVisitPlaces === "none" || originalFormValues.mustVisitPlaces === "" ? undefined : originalFormValues.mustVisitPlaces,
+            mustVisitPlaces: originalFormValues.itineraryType === 'custom' && (originalFormValues.mustVisitPlaces === "none" || originalFormValues.mustVisitPlaces === "") ? undefined : originalFormValues.mustVisitPlaces,
         };
 
         const result = await aiItineraryTool(payload);
@@ -245,7 +242,8 @@ export function ItineraryPlanner() {
                                     // Reset specific fields if switching to random
                                     if (value === 'random') {
                                         form.resetField("interests");
-                                        form.resetField("endPoint");
+                                        // Keep endPoint and mustVisitPlaces available for random now
+                                        // form.resetField("endPoint");
                                         form.resetField("mustVisitPlaces");
                                     }
                                 }}
@@ -301,6 +299,35 @@ export function ItineraryPlanner() {
                             </FormItem>
                             )}
                         />
+                        {/* EndPoint field now visible for both custom and random */}
+                        <FormField
+                            control={form.control}
+                            name="endPoint"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || "none"} defaultValue={field.value || "none"}>
+                                    <FormControl>
+                                        <SelectTrigger className="h-11 text-base">
+                                            <SelectValue placeholder="Select ending district (optional)" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
+                                        {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
+                                            <SelectGroup key={region}>
+                                                <SelectLabel className="font-bold">{region}</SelectLabel>
+                                                {districts.map(d => (
+                                                    <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
+                                                ))}
+                                            </SelectGroup>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
@@ -338,6 +365,7 @@ export function ItineraryPlanner() {
                                 )}
                             />
                         </div>
+                        {/* Conditional rendering for interests and mustVisitPlaces only for custom type */}
                         {itineraryType === 'custom' && (
                         <>
                             <FormField
@@ -356,34 +384,6 @@ export function ItineraryPlanner() {
                                 <FormMessage />
                                 </FormItem>
                             )}
-                            />
-                            <FormField
-                                control={form.control}
-                                name="endPoint"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value || "none"} defaultValue={field.value || "none"}>
-                                        <FormControl>
-                                            <SelectTrigger className="h-11 text-base">
-                                                <SelectValue placeholder="Select ending district (optional)" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
-                                            {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
-                                                <SelectGroup key={region}>
-                                                    <SelectLabel className="font-bold">{region}</SelectLabel>
-                                                    {districts.map(d => (
-                                                        <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
-                                                    ))}
-                                                </SelectGroup>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
                             />
                              <FormField
                                 control={form.control}
@@ -510,21 +510,21 @@ export function ItineraryPlanner() {
                     </div>
                     {itinerary.itinerary.map((dayPlan, index) => (
                     // Adjusted relative positioning and padding for mobile
-                    <div key={index} className="relative pl-8 md:pl-10 group">
+                    <div key={index} className="relative pl-8 md:pl-10 group print:pl-8">
                         {/* Adjusted icon size and position */}
-                        <span className="absolute left-[-2px] top-1 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-lg shadow z-10 print:bg-gray-700 print:text-white">
+                        <span className="absolute left-[-2px] top-1 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-lg shadow z-10 print:bg-gray-700 print:text-white print:w-8 print:h-8 print:text-sm print:left-[-2px]">
                         {dayPlan.day}
                         </span>
                         {/* Adjusted line position */}
                         {index < itinerary.itinerary.length - 1 && (
-                            <div className="absolute left-[14px] md:left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden print:bg-gray-300" />
+                            <div className="absolute left-[14px] md:left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden print:bg-gray-300 print:left-[14px] print:bottom-[-1rem]" />
                         )}
                          {/* Adjusted margin for mobile */}
-                        <Card className="ml-4 md:ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow print:shadow-none print:border-l-2 print:border-gray-400 print:ml-4">
+                        <Card className="ml-4 md:ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow print:shadow-none print:border-l-2 print:border-gray-400 print:ml-4 print:border-accent">
                          {/* Adjusted padding for mobile */}
                         <CardHeader className="p-3 md:p-4 print:p-3">
                              {/* Adjusted title size and gap */}
-                            <CardTitle className="text-lg md:text-xl flex items-center gap-1.5 md:gap-2 print:text-lg">
+                            <CardTitle className="text-lg md:text-xl flex items-center gap-1.5 md:gap-2 print:text-lg print:gap-1.5">
                                 <MapPinIcon className="h-5 w-5 md:h-6 md:w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
                             </CardTitle>
                         </CardHeader>
@@ -589,3 +589,4 @@ export function ItineraryPlanner() {
     </div>
   );
 }
+
