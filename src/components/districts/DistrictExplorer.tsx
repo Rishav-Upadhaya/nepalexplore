@@ -15,8 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { suggestHiddenGems, type SuggestHiddenGemsOutput } from '@/ai/flows/hidden-gems-suggestions';
 import { getDistrictDetails, type GetDistrictDetailsOutput } from '@/ai/flows/get-district-details-flow'; // Import the new flow
+import { generateDistrictImage, type GenerateDistrictImageOutput } from '@/ai/flows/generate-district-image-flow'; // Import image generation flow
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, MapPin, Lightbulb, Building, Trees, Utensils, Sparkles, Info, Compass, Search } from 'lucide-react';
+import { Loader2, MapPin, Lightbulb, Building, Trees, Utensils, Sparkles, Info, Search, ImageOff } from 'lucide-react'; // Added ImageOff icon
 import { useToast } from "@/hooks/use-toast";
 import { nepalDistricts, type DistrictName } from '@/types';
 import Image from 'next/image';
@@ -31,6 +32,7 @@ const formSchema = z.object({
 
 // Type for district details state, can be null, loading, or the actual data
 type DistrictDetailsState = GetDistrictDetailsOutput | 'loading' | null;
+type DistrictImageState = string | 'loading' | null | 'error'; // String is data URI
 
 export function DistrictExplorer() {
   const searchParams = useSearchParams();
@@ -38,6 +40,7 @@ export function DistrictExplorer() {
 
   const [selectedDistrict, setSelectedDistrict] = useState<DistrictName | null>(initialDistrictFromUrl);
   const [districtDetails, setDistrictDetails] = useState<DistrictDetailsState>(null); // Use the new state type
+  const [districtImageUrl, setDistrictImageUrl] = useState<DistrictImageState>(null); // State for dynamic image URL
   const [hiddenGems, setHiddenGems] = useState<SuggestHiddenGemsOutput | null>(null);
   const [isLoadingGems, setIsLoadingGems] = useState(false);
   const [districtFetchError, setDistrictFetchError] = useState<string | null>(null); // Specific error state for district details
@@ -55,23 +58,46 @@ export function DistrictExplorer() {
   // Use useCallback to memoize fetchDistrictData
   const fetchDistrictData = useCallback(async (districtName: DistrictName) => {
     setDistrictDetails('loading'); // Set state to loading
+    setDistrictImageUrl('loading'); // Set image state to loading
     setDistrictFetchError(null); // Clear previous errors
     setHiddenGems(null); // Reset gems when district changes
     setGemsError(null); // Reset gems error
+
+    let detailsResult: GetDistrictDetailsOutput | null = null;
+
     try {
-      const result = await getDistrictDetails({ districtName });
-      setDistrictDetails(result);
+      detailsResult = await getDistrictDetails({ districtName });
+      setDistrictDetails(detailsResult);
     } catch (e) {
       console.error("Error fetching district details:", e);
       const errorMessage = e instanceof Error ? e.message : "Could not fetch district details.";
       setDistrictFetchError(`Failed to fetch details for ${districtName}. ${errorMessage}`);
       setDistrictDetails(null); // Reset details on error
+      setDistrictImageUrl(null); // Reset image URL on text fetch error
       toast({
         title: "Error",
         description: `Could not fetch details for ${districtName}.`,
         variant: "destructive",
       });
+      return; // Exit if text details fail
     }
+
+    // If details were fetched successfully, try generating the image
+    if (detailsResult) {
+      try {
+        const imageResult = await generateDistrictImage({ districtName });
+        setDistrictImageUrl(imageResult.imageUrl); // Set the data URI
+      } catch (imgErr) {
+         console.error("Error generating district image:", imgErr);
+         setDistrictImageUrl('error'); // Set image state to error
+         toast({
+           title: "Image Generation Failed",
+           description: `Could not generate image for ${districtName}. Displaying details without image.`,
+           variant: "default", // Use default or warning, not destructive as text details loaded
+         });
+      }
+    }
+
   }, [toast]); // Add toast as dependency
 
   // Effect to handle initial district from URL
@@ -85,6 +111,7 @@ export function DistrictExplorer() {
        }
     } else {
          setDistrictDetails(null); // Clear details if no valid initial district
+         setDistrictImageUrl(null); // Clear image URL as well
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialDistrictFromUrl]); // Run only when URL param changes
@@ -137,10 +164,6 @@ export function DistrictExplorer() {
     window.history.pushState({}, '', `${window.location.pathname}?${currentParams.toString()}`);
   }, []); // No dependencies needed as it only uses setSelectedDistrict and browser APIs
 
-  const districtImage = selectedDistrict ? `https://picsum.photos/seed/${selectedDistrict.replace(/\s+/g, '')}/1200/500` : "https://picsum.photos/1200/500";
-  const districtImageHint = selectedDistrict ? `${selectedDistrict} landscape` : "Nepal landscape";
-
-
   // Helper function to render lists or placeholder
   const renderList = (items: string[] | undefined) => {
       if (!items || items.length === 0) {
@@ -190,7 +213,7 @@ export function DistrictExplorer() {
               <CardContent className="p-6">
                 <form onSubmit={form.handleSubmit(onSuggestGemsSubmit)} className="space-y-4">
                    {/* Ensure districtName hidden input for the form */}
-                   <input type="hidden" {...form.register("districtName")} value={selectedDistrict}/>
+                   <input type="hidden" {...form.register("districtName")} value={selectedDistrict || ''}/> {/* Added empty string fallback */}
                   <div>
                     <Label htmlFor="userPreferences" className="font-medium text-base">Your Preferences (Optional)</Label>
                     <Textarea
@@ -220,15 +243,15 @@ export function DistrictExplorer() {
 
          {/* Main Content Area */}
         <div className="lg:col-span-2">
-          {/* Loading State */}
-          {districtDetails === 'loading' && (
+          {/* Loading State for both details and image */}
+          {(districtDetails === 'loading' || districtImageUrl === 'loading') && selectedDistrict && (
             <Card className="shadow-xl border">
                <CardHeader className="p-0">
                  <Skeleton className="aspect-[1200/500] w-full rounded-t-lg" />
                </CardHeader>
                <CardContent className="p-6 space-y-4">
-                 <Skeleton className="h-8 w-3/4 mb-2" /> {/* Tagline Skeleton */}
-                 <Skeleton className="h-6 w-1/2 mb-6" /> {/* Subtitle Skeleton */}
+                 <Skeleton className="h-8 w-3/4 mb-2" /> {/* Tagline/Title Skeleton */}
+                 <Skeleton className="h-6 w-1/2 mb-6" /> {/* Subtitle/Description Skeleton */}
                   {/* Accordion Skeletons */}
                   <div className="space-y-2">
                     <Skeleton className="h-10 w-full" />
@@ -239,7 +262,7 @@ export function DistrictExplorer() {
                </CardContent>
             </Card>
           )}
-          {/* Error State */}
+          {/* Error State for fetching district text details */}
            {districtFetchError && districtDetails !== 'loading' && (
              <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-destructive/10 border border-destructive">
                 <CardHeader>
@@ -249,35 +272,44 @@ export function DistrictExplorer() {
                 <CardContent>
                     <CardDescription className="text-lg text-destructive/90">{districtFetchError}</CardDescription>
                     <Button variant="outline" onClick={() => selectedDistrict && fetchDistrictData(selectedDistrict)} className="mt-6 border-destructive text-destructive hover:bg-destructive/10">
-                      {/* Add loader if needed during retry */}
                       Try Again
                     </Button>
                 </CardContent>
             </Card>
            )}
 
-          {/* Success State */}
-          {districtDetails && typeof districtDetails === 'object' && !districtFetchError ? (
+          {/* Success State (Details fetched, handle image state) */}
+          {districtDetails && typeof districtDetails === 'object' && !districtFetchError && districtImageUrl !== 'loading' ? (
             <Card className="shadow-xl border">
                <CardHeader className="p-0">
-                <div className="aspect-[1200/500] relative rounded-t-lg overflow-hidden bg-muted"> {/* Added bg-muted for placeholder */}
-                  <Image
-                    src={districtImage}
-                    alt={`Image of ${districtDetails.name}`}
-                    data-ai-hint={districtImageHint}
-                    fill
-                    className="object-cover"
-                    priority={!initialDistrictFromUrl} // Load priority only if not coming from direct link initially
-                    sizes="(max-width: 1024px) 100vw, 66vw" // Updated sizes for better optimization
-                    unoptimized={!selectedDistrict} // Don't optimize the default placeholder
-                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://picsum.photos/1200/500'; }} // Fallback image
-                  />
+                 <div className="aspect-[1200/500] relative rounded-t-lg overflow-hidden bg-muted">
+                   {/* Image Display Logic */}
+                   {districtImageUrl && typeof districtImageUrl === 'string' ? (
+                      <Image
+                        src={districtImageUrl} // Use the generated data URI
+                        alt={`AI generated image of ${districtDetails.name}`}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 1024px) 100vw, 66vw"
+                      />
+                   ) : districtImageUrl === 'error' ? (
+                       <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted/50 text-muted-foreground">
+                           <ImageOff className="h-16 w-16 mb-4 opacity-50" />
+                           <p>Could not load image.</p>
+                       </div>
+                   ) : (
+                       // Fallback or initial state before image loads (can be Skeleton if preferred, but should be covered by loading state above)
+                       <div className="absolute inset-0 flex items-center justify-center bg-muted/30 text-muted-foreground">
+                         <Loader2 className="h-8 w-8 animate-spin" />
+                       </div>
+                   )}
+                   {/* Overlay for Text (only show if details are loaded) */}
                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 md:p-8">
                      <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg">{districtDetails.name}</h2>
                      <p className="text-md md:text-lg text-white/90 mt-1 drop-shadow-md">{districtDetails.tagline}</p>
                    </div>
-                </div>
-              </CardHeader>
+                 </div>
+               </CardHeader>
               <CardContent className="p-6 space-y-6">
                  {/* Hidden Gems Section */}
                  {isLoadingGems && (
@@ -362,7 +394,7 @@ export function DistrictExplorer() {
              !selectedDistrict && districtDetails !== 'loading' && !districtFetchError && (
                 <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
                 <CardHeader>
-                    <Compass className="h-20 w-20 text-primary mx-auto mb-6" />
+                    <Search className="h-20 w-20 text-primary mx-auto mb-6" />
                     <CardTitle className="text-3xl">Select a District to Begin</CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -378,3 +410,4 @@ export function DistrictExplorer() {
     </div>
   );
 }
+
