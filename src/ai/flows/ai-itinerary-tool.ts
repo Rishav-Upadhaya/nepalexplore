@@ -31,12 +31,14 @@ const AiItineraryToolInputSchema = z.object({
 });
 export type AiItineraryToolInput = z.infer<typeof AiItineraryToolInputSchema>;
 
+// Updated Output Schema
 const AiItineraryToolOutputSchema = z.object({
   itinerary: z.array(
     z.object({
       day: z.number().describe('The day number of the itinerary.'),
       location: z.string().describe('The location for the day.'),
-      activities: z.string().describe('The activities planned for the day, described engagingly.'),
+      activities: z.array(z.string()).describe('A list of specific activities planned for the day (bullet points).'),
+      hotelRecommendations: z.array(z.string()).optional().describe('Optional: 2-3 specific hotel recommendations for this location if staying overnight.'),
     })
   ).describe('The generated travel itinerary with daily schedule.'),
 });
@@ -45,7 +47,6 @@ export type AiItineraryToolOutput = z.infer<typeof AiItineraryToolOutputSchema>;
 export async function aiItineraryTool(input: AiItineraryToolInput): Promise<AiItineraryToolOutput> {
   // Basic validation: Ensure interests are provided for custom type
   if (input.itineraryType === 'custom' && (!input.interests || input.interests.length < 10)) {
-      // This validation is now primarily handled by the Zod schema refinement, but kept here as a safety net.
       throw new Error("Interests (min 10 characters) are required for a custom itinerary.");
   }
   return aiItineraryToolFlow(input);
@@ -55,10 +56,13 @@ const prompt = ai.definePrompt({
   name: 'aiItineraryToolPrompt',
   input: {schema: AiItineraryToolInputSchema},
   output: {schema: AiItineraryToolOutputSchema},
-  // Updated prompt using standard #if based on the presence of 'interests' field
-  prompt: `You are a creative and knowledgeable travel expert specializing in crafting exciting itineraries for Nepal. Generate a detailed day-by-day travel plan based on the user's request. Be engaging and descriptive in the activities.
+  prompt: `You are a creative and knowledgeable travel expert specializing in crafting exciting itineraries for Nepal. Generate a detailed day-by-day travel plan based on the user's request.
 
-{{#if interests}} {{! Use the presence of 'interests' as a proxy for 'custom' type }}
+**CRITICAL INSTRUCTIONS:**
+1.  **List activities as bullet points:** For the 'activities' field, provide a JSON array of strings, where each string is a distinct activity or step for the day. DO NOT provide a single paragraph.
+2.  **Hotel Recommendations:** If the plan for the day involves staying overnight in a location (especially in cities or major towns), provide 2-3 *specific*, *realistic* hotel names in the 'hotelRecommendations' field (as a JSON array of strings). Mention the hotel name and a brief category if possible (e.g., "Hotel Yak & Yeti (Luxury)", "Thamel Eco Resort (Mid-Range)", "Zostel Kathmandu (Budget/Hostel)"). If it's a trekking day staying in a tea house, you can omit specific recommendations or just mention "Stay at a local tea house". Only include recommendations if an overnight stay is implied for that day's location.
+
+{{#if interests}}
 **Itinerary Type:** Custom Plan
 
 **User Preferences:**
@@ -69,9 +73,9 @@ const prompt = ai.definePrompt({
 {{#if endPoint}}*   End Point: {{{endPoint}}}{{/if}}
 {{#if mustVisitPlaces}}*   Must-Visit Places/Regions: {{{mustVisitPlaces}}}{{/if}}
 
-Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically and incorporates the must-visit locations if provided.
+Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically and incorporates the must-visit locations if provided. Follow the critical instructions above.
 
-{{else}} {{! If interests are not provided (or empty), assume 'random' }}
+{{else}}
 **Itinerary Type:** Random Adventure
 
 **User Preferences:**
@@ -79,17 +83,27 @@ Generate a personalized itinerary considering all these preferences. Ensure the 
 *   Budget: {{{budget}}}
 *   Start Point: {{{startPoint}}}
 
-Generate a plausible and exciting random itinerary starting from {{startPoint}} for {{duration}} days, suitable for a {{budget}} budget. Focus on a balanced mix of popular highlights and potentially some interesting lesser-known spots accessible from the route. Make it sound like a fun adventure!
+Generate a plausible and exciting random itinerary starting from {{startPoint}} for {{duration}} days, suitable for a {{budget}} budget. Focus on a balanced mix of popular highlights and potentially some interesting lesser-known spots accessible from the route. Make it sound like a fun adventure! Follow the critical instructions above.
 {{/if}}
 
 **Output Format:**
-Provide the output as a JSON array of objects. Each object must represent a day and contain 'day' (number), 'location' (string), and 'activities' (string).
+Provide the output as a JSON array of objects. Each object must represent a day and contain 'day' (number), 'location' (string), 'activities' (array of strings), and optionally 'hotelRecommendations' (array of strings).
 
 Example for one day:
 {
   "day": 3,
   "location": "Chitwan National Park",
-  "activities": "Embark on an early morning jeep safari adventure! Keep your eyes peeled for rhinos, deer, and maybe even a Royal Bengal Tiger. Afternoon canoe ride on the Rapti River, spotting crocodiles and diverse birdlife."
+  "activities": [
+    "Embark on an early morning jeep safari adventure!",
+    "Keep your eyes peeled for rhinos, deer, and maybe even a Royal Bengal Tiger.",
+    "Afternoon canoe ride on the Rapti River, spotting crocodiles and diverse birdlife.",
+    "Evening cultural show by the local Tharu community."
+  ],
+  "hotelRecommendations": [
+     "Barahi Jungle Lodge (Luxury)",
+     "Hotel Parkland (Mid-Range)",
+     "Wild Horizons Guest House (Budget)"
+  ]
 }
 `,
 });
@@ -110,7 +124,7 @@ const aiItineraryToolFlow = ai.defineFlow(
       interests: input.interests || undefined, // Pass interests even if empty for the #if logic in handlebars
     };
     const {output} = await prompt(processedInput);
+    // Optional: Add post-processing here if needed to ensure format compliance
     return output!;
   }
 );
-

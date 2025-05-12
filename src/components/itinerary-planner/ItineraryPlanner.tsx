@@ -13,12 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { aiItineraryTool, type AiItineraryToolOutput } from '@/ai/flows/ai-itinerary-tool';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2, Route, CalendarDays, DollarSign, MapPinIcon, Sparkles, ListChecks, Info, FileText, Shuffle, Edit } from 'lucide-react';
+import { Loader2, Route, CalendarDays, DollarSign, MapPinIcon, Sparkles, ListChecks, Info, FileText, Shuffle, Edit, Hotel } from 'lucide-react'; // Added Hotel icon
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { nepalDistrictsByRegion, type DistrictName } from '@/types'; // Import the grouped districts
+import { nepalDistrictsByRegion, type DistrictName } from '@/types';
 
 // Define schema for both types
 const formSchema = z.object({
@@ -247,14 +247,13 @@ export function ItineraryPlanner() {
                         render={({ field }) => (
                         <FormItem>
                             <FormLabel className="font-semibold text-base">Ending Point (Optional)</FormLabel>
-                             <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                             <Select onValueChange={field.onChange} defaultValue={field.value || "none"}>
                                 <FormControl>
                                     <SelectTrigger className="h-11 text-base">
                                         <SelectValue placeholder="Select ending district (optional)" />
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    {/* Use a non-empty value for the "None" option */}
                                      <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
                                     {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
                                         <SelectGroup key={region}>
@@ -276,7 +275,6 @@ export function ItineraryPlanner() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="font-semibold text-base">Must-Visit Places/Regions (Optional)</FormLabel>
-                          {/* Using Textarea for flexibility as multiple places might be listed */}
                            <FormControl>
                             <Textarea
                               placeholder="List specific places or regions, e.g., Lumbini, Everest Base Camp region, Bardia..."
@@ -284,27 +282,6 @@ export function ItineraryPlanner() {
                               {...field}
                             />
                           </FormControl>
-                          {/*
-                          Alternative using Select (less flexible if user wants multiple or specific non-district places):
-                          <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
-                              <FormControl>
-                                  <SelectTrigger className="h-11 text-base">
-                                      <SelectValue placeholder="Select must-visit district (optional)" />
-                                  </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                   <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
-                                  {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
-                                      <SelectGroup key={region}>
-                                          <SelectLabel className="font-bold">{region}</SelectLabel>
-                                          {districts.map(d => (
-                                              <SelectItem key={d} value={d} className="text-base">{d}</SelectItem>
-                                          ))}
-                                      </SelectGroup>
-                                  ))}
-                              </SelectContent>
-                          </Select>
-                           */}
                            <FormMessage />
                         </FormItem>
                       )}
@@ -374,9 +351,31 @@ export function ItineraryPlanner() {
                         </CardTitle>
                          <p className="text-sm text-muted-foreground font-medium">Day {dayPlan.day}</p>
                       </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        <h4 className="font-semibold mb-1 text-foreground/90 text-base">Activities:</h4>
-                        <p className="text-muted-foreground whitespace-pre-line text-base">{dayPlan.activities}</p>
+                      <CardContent className="p-4 pt-0 space-y-3">
+                        <div>
+                            <h4 className="font-semibold mb-1.5 text-foreground/90 text-base">Activities:</h4>
+                            <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-base">
+                              {dayPlan.activities?.map((activity, actIndex) => (
+                                  <li key={actIndex}>{activity}</li>
+                              ))}
+                              {(!dayPlan.activities || dayPlan.activities.length === 0) && (
+                                   <li className="italic">No specific activities listed for today.</li>
+                              )}
+                            </ul>
+                        </div>
+                         {dayPlan.hotelRecommendations && dayPlan.hotelRecommendations.length > 0 && (
+                            <div>
+                                <Separator className="my-3" />
+                                <h4 className="font-semibold mb-1.5 text-foreground/90 text-base flex items-center gap-1.5">
+                                    <Hotel className="h-5 w-5 text-primary" /> Hotel Recommendations:
+                                </h4>
+                                <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-base">
+                                {dayPlan.hotelRecommendations.map((hotel, hotelIndex) => (
+                                    <li key={hotelIndex}>{hotel}</li>
+                                ))}
+                                </ul>
+                            </div>
+                        )}
                       </CardContent>
                     </Card>
                   </div>
