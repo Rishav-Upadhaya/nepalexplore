@@ -431,11 +431,7 @@ export function ItineraryPlanner() {
                             <CardTitle className="text-xl flex items-center gap-2 print:text-lg">
                             <MapPinIcon className="h-6 w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
                             </CardTitle>
-                            {dayPlan.estimatedDailyCost && (
-                                <p className="text-sm text-muted-foreground font-medium flex items-center gap-1.5 print:text-xs">
-                                     <DollarSign className="h-4 w-4 print:h-3 print:w-3"/> Est. Cost: {dayPlan.estimatedDailyCost}
-                                </p>
-                            )}
+                            {/* REMOVED: Estimated Daily Cost Section */}
                         </CardHeader>
                         <CardContent className="p-4 pt-0 space-y-3 print:p-3 print:pt-0 print:space-y-2">
                             <div>

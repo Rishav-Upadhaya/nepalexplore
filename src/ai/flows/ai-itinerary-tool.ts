@@ -37,7 +37,7 @@ const AiItineraryToolInputSchema = z.object({
 });
 export type AiItineraryToolInput = z.infer<typeof AiItineraryToolInputSchema>;
 
-// Updated Output Schema to include estimatedDailyCost
+// Updated Output Schema to remove estimatedDailyCost
 const AiItineraryToolOutputSchema = z.object({
   itinerary: z.array(
     z.object({
@@ -45,8 +45,7 @@ const AiItineraryToolOutputSchema = z.object({
       location: z.string().describe('The location for the day.'),
       activities: z.array(z.string()).describe('A list of specific activities planned for the day (bullet points).'),
       hotelRecommendations: z.array(z.string()).optional().describe('Optional: 2-3 specific hotel recommendations for this location if staying overnight.'),
-      // New field for daily cost estimate
-      estimatedDailyCost: z.string().optional().describe('Approximate estimated cost for this day (e.g., "$40-$60 USD", "Varies"). Should reflect the overall budget.'),
+      // REMOVED: estimatedDailyCost field
     })
   ).describe('The generated travel itinerary with daily schedule.'),
 });
@@ -74,7 +73,7 @@ const prompt = ai.definePrompt({
 **CRITICAL INSTRUCTIONS:**
 1.  **List activities as bullet points:** For the 'activities' field, provide a JSON array of strings, where each string is a distinct activity or step for the day. DO NOT provide a single paragraph.
 2.  **Hotel Recommendations:** If the plan for the day involves staying overnight in a location (especially in cities or major towns), provide 2-3 *specific*, *realistic* hotel names in the 'hotelRecommendations' field (as a JSON array of strings). Mention the hotel name and a brief category if possible (e.g., "Hotel Yak & Yeti (Luxury)", "Thamel Eco Resort (Mid-Range)", "Zostel Kathmandu (Budget/Hostel)"). If it's a trekking day staying in a tea house, you can omit specific recommendations or just mention "Stay at a local tea house". Only include recommendations if an overnight stay is implied for that day's location.
-3.  **Estimated Daily Cost:** Provide a reasonable estimate for the 'estimatedDailyCost' field for each day as a string (e.g., "$50-$70 USD", "$100-$150 USD", "Trekking Day: Approx $30 USD"). This estimate should reflect the overall trip budget provided by the user and the activities planned for the day. Be realistic. If costs can vary significantly (e.g., depending on shopping), you can state "Varies".
+3.  **Budget Alignment:** Ensure suggested activities and hotels generally align with the overall trip budget range provided by the user. For example, don't suggest primarily luxury hotels for a "< $500 USD" budget.
 
 {{#if interests}}
 **Itinerary Type:** Custom Plan
@@ -87,7 +86,7 @@ const prompt = ai.definePrompt({
 {{#if endPoint}}*   End Point: {{{endPoint}}}{{/if}}
 {{#if mustVisitPlaces}}*   Must-Visit Places/Regions: {{{mustVisitPlaces}}}{{/if}}
 
-Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically and incorporates the must-visit locations if provided. Follow the critical instructions above, paying close attention to the budget range when suggesting activities, hotels, and daily cost estimates.
+Generate a personalized itinerary considering all these preferences. Ensure the plan flows logically and incorporates the must-visit locations if provided. Follow the critical instructions above, paying close attention to the budget range when suggesting activities and hotels.
 
 {{else}}
 **Itinerary Type:** Random Adventure
@@ -97,11 +96,11 @@ Generate a personalized itinerary considering all these preferences. Ensure the 
 *   Budget Range (Total Trip): {{{budget}}}
 *   Start Point: {{{startPoint}}}
 
-Generate a plausible and exciting random itinerary starting from {{startPoint}} for {{duration}} days, suitable for the specified total trip budget range: {{budget}}. Focus on a balanced mix of popular highlights and potentially some interesting lesser-known spots accessible from the route. Make it sound like a fun adventure! Follow the critical instructions above, ensuring daily cost estimates align with the overall budget.
+Generate a plausible and exciting random itinerary starting from {{startPoint}} for {{duration}} days, suitable for the specified total trip budget range: {{budget}}. Focus on a balanced mix of popular highlights and potentially some interesting lesser-known spots accessible from the route. Make it sound like a fun adventure! Follow the critical instructions above, ensuring suggestions align with the overall budget.
 {{/if}}
 
 **Output Format:**
-Provide the output as a JSON array of objects. Each object must represent a day and contain 'day' (number), 'location' (string), 'activities' (array of strings), optionally 'hotelRecommendations' (array of strings), and 'estimatedDailyCost' (string, optional).
+Provide the output as a JSON array of objects. Each object must represent a day and contain 'day' (number), 'location' (string), 'activities' (array of strings), and optionally 'hotelRecommendations' (array of strings). DO NOT include an 'estimatedDailyCost' field.
 
 Example for one day:
 {
@@ -117,8 +116,7 @@ Example for one day:
      "Barahi Jungle Lodge (Luxury)",
      "Hotel Parkland (Mid-Range)",
      "Wild Horizons Guest House (Budget)"
-  ],
-  "estimatedDailyCost": "$80-$120 USD" // Example cost estimate
+  ]
 }
 `,
 });
@@ -139,14 +137,7 @@ const aiItineraryToolFlow = ai.defineFlow(
       interests: input.interests || undefined, // Pass interests even if empty for the #if logic in handlebars
     };
     const {output} = await prompt(processedInput);
-    // Optional: Add post-processing here if needed to ensure format compliance
-    // e.g., ensure every day has an estimatedDailyCost or default it
-    if (output?.itinerary) {
-      output.itinerary = output.itinerary.map(day => ({
-        ...day,
-        estimatedDailyCost: day.estimatedDailyCost || "Not specified", // Default if missing
-      }));
-    }
+    // No post-processing needed for estimatedDailyCost anymore
     return output!;
   }
 );

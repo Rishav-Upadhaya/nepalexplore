@@ -4,8 +4,9 @@
 export interface ItineraryDay {
   day: number;
   location: string;
-  activities: string;
-  estimatedDailyCost?: string; // Added optional field
+  activities: string[]; // Changed to array of strings
+  hotelRecommendations?: string[]; // Added optional field
+  // REMOVED: estimatedDailyCost?: string;
 }
 
 export interface Itinerary {
@@ -81,4 +82,3 @@ export const budgetRanges = {
 
 export type BudgetRangeKey = keyof typeof budgetRanges;
 export type BudgetRangeLabel = typeof budgetRanges[BudgetRangeKey];
-
