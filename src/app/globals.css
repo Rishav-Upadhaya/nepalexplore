@@ -95,5 +95,5 @@ body {
 
 /* Custom override for max-h-[75vh] */
 .max-h-\[75vh\] {
-    max-height: 182vh;
+    max-height: calc(75vh + 200px); /* Increased height as requested */
 }
