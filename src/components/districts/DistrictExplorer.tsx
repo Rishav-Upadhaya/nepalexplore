@@ -329,7 +329,7 @@ export function DistrictExplorer() {
                  </div>
                </CardHeader>
               {/* Added ScrollArea with adjusted responsive max-height */}
-              <ScrollArea className="max-h-[75vh] w-full"> {/* Ensure ScrollArea takes full width */}
+              <ScrollArea className="max-h-[75vh] w-full">
                 <CardContent className="p-6 space-y-6">
                   {/* Hidden Gems Section */}
                   {isLoadingGems && (
@@ -435,4 +435,3 @@ export function DistrictExplorer() {
     </div>
   );
 }
-
