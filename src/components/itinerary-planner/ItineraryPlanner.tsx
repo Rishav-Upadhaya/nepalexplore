@@ -30,8 +30,8 @@ const formSchema = z.object({
   duration: z.coerce.number().min(1, { message: "Duration must be at least 1 day." }),
   budget: z.enum(Object.keys(budgetRanges) as [keyof typeof budgetRanges, ...(keyof typeof budgetRanges)[]] , { required_error: "Please select a budget range." }),
   startPoint: z.string({required_error: "Please select a starting point."}).min(1, { message: "Please select a starting point." }),
-  endPoint: z.string().optional(),
-  mustVisitPlaces: z.string().optional(),
+  endPoint: z.string().optional(), // Allow empty string or undefined
+  mustVisitPlaces: z.string().optional(), // Allow empty string or undefined
 }).refine(data => {
     if (data.itineraryType === 'custom' && (!data.interests || data.interests.length < 10)) {
       return false;
@@ -64,8 +64,8 @@ export function ItineraryPlanner() {
       duration: 7,
       budget: undefined,
       startPoint: "Kathmandu",
-      endPoint: "none",
-      mustVisitPlaces: "none",
+      endPoint: "none", // Default to 'none' value for Select
+      mustVisitPlaces: "none", // Default to 'none' value for Select
     },
   });
 
@@ -98,8 +98,9 @@ export function ItineraryPlanner() {
         ...values,
         budget: budgetLabel,
         interests: values.itineraryType === 'custom' ? values.interests : undefined,
-        endPoint: values.endPoint === "none" || values.endPoint === "" || !values.endPoint ? undefined : values.endPoint,
-        mustVisitPlaces: values.itineraryType === 'custom' && values.mustVisitPlaces !== "none" && values.mustVisitPlaces !== "" && values.mustVisitPlaces ? values.mustVisitPlaces : undefined,
+        // Use 'none' or empty string as indication to not send the field
+        endPoint: values.endPoint === "none" || !values.endPoint ? undefined : values.endPoint,
+        mustVisitPlaces: values.itineraryType === 'custom' && values.mustVisitPlaces !== "none" && values.mustVisitPlaces ? values.mustVisitPlaces : undefined,
       };
 
       const result = await aiItineraryTool(payload);
@@ -138,8 +139,8 @@ export function ItineraryPlanner() {
             previousItinerary: itinerary,
             modificationRequest: modificationData.modificationRequest,
             interests: originalFormValues.itineraryType === 'custom' ? originalFormValues.interests : undefined,
-            endPoint: originalFormValues.endPoint === "none" || originalFormValues.endPoint === "" || !originalFormValues.endPoint ? undefined : originalFormValues.endPoint,
-            mustVisitPlaces: originalFormValues.itineraryType === 'custom' && originalFormValues.mustVisitPlaces !== "none" && originalFormValues.mustVisitPlaces !== "" && originalFormValues.mustVisitPlaces ? originalFormValues.mustVisitPlaces : undefined,
+            endPoint: originalFormValues.endPoint === "none" || !originalFormValues.endPoint ? undefined : originalFormValues.endPoint,
+            mustVisitPlaces: originalFormValues.itineraryType === 'custom' && originalFormValues.mustVisitPlaces !== "none" && originalFormValues.mustVisitPlaces ? originalFormValues.mustVisitPlaces : undefined,
         };
 
         const result = await aiItineraryTool(payload);
@@ -259,6 +260,7 @@ export function ItineraryPlanner() {
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-1 space-y-8">
+            {/* Form Card */}
             <Card className="shadow-xl border border-primary/20">
                 <CardHeader className="bg-primary/5 p-6">
                     <CardTitle className="flex items-center gap-2 text-primary"><Route className="h-7 w-7" /> Plan Your Trip</CardTitle>
@@ -301,7 +303,7 @@ export function ItineraryPlanner() {
                             </FormItem>
                         )}
                         />
-                        <FormField
+                         <FormField
                             control={form.control}
                             name="startPoint"
                             render={({ field }) => (
@@ -328,7 +330,7 @@ export function ItineraryPlanner() {
                             </FormItem>
                             )}
                         />
-                        <FormField
+                         <FormField
                             control={form.control}
                             name="endPoint"
                             render={({ field }) => (
@@ -337,7 +339,7 @@ export function ItineraryPlanner() {
                                 <Select onValueChange={field.onChange} value={field.value || "none"} defaultValue={field.value || "none"}>
                                     <FormControl>
                                         <SelectTrigger className="h-11 text-base">
-                                            <SelectValue placeholder="Select ending district (optional)" />
+                                            <SelectValue placeholder="Select ending district" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
@@ -421,7 +423,7 @@ export function ItineraryPlanner() {
                                      <Select onValueChange={field.onChange} value={field.value || "none"} defaultValue={field.value || "none"}>
                                         <FormControl>
                                             <SelectTrigger className="h-11 text-base">
-                                                <SelectValue placeholder="Select must-visit district (optional)" />
+                                                <SelectValue placeholder="Select must-visit district" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -452,7 +454,8 @@ export function ItineraryPlanner() {
                 </CardContent>
             </Card>
 
-            {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
+            {/* Modification Card - appears only when itinerary is generated */}
+             {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
                 <Card className="shadow-xl border">
                     <CardHeader className="bg-muted/50 p-6">
                         <CardTitle className="text-xl flex items-center gap-2 text-primary">
@@ -493,7 +496,7 @@ export function ItineraryPlanner() {
             )}
         </div>
 
-
+        {/* Itinerary Display Column */}
         <div className="lg:col-span-2 mt-8 lg:mt-0">
           {isLoading && (
              <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
@@ -512,8 +515,8 @@ export function ItineraryPlanner() {
             </Alert>
           )}
 
+          {/* Itinerary Card */}
           {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
-            <>
             <Card className="shadow-xl border">
               <CardHeader className="bg-primary/5 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
@@ -527,64 +530,68 @@ export function ItineraryPlanner() {
                   {isExporting ? "Exporting..." : "Export PDF"}
                 </Button>
               </CardHeader>
-              <div ref={itineraryRef} className="bg-background">
-                <CardContent className="p-0"> {/* Removed padding, ScrollArea will handle it */}
-                  <ScrollArea className="h-[600px] lg:h-[calc(100vh-20rem)] w-full rounded-b-md"> {/* Added ScrollArea with defined height */}
-                    <div className="p-4 md:p-6 space-y-6"> {/* Wrapper for padding and spacing */}
-                      <div className="p-4 border rounded-lg bg-muted/50 text-center hidden print:block">
-                          <h3 className="text-lg font-semibold text-primary mb-2">VisitNepal Itinerary</h3>
-                          <p className="text-muted-foreground text-sm">Generated for {originalFormValues?.duration} days, starting from {originalFormValues?.startPoint}.</p>
-                      </div>
-                      {itinerary.itinerary.map((dayPlan, index) => (
-                      <div key={index} className="relative pl-8 md:pl-10 group print:pl-8">
-                          <span className="absolute left-[-2px] top-1 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-lg shadow z-10 print:bg-gray-700 print:text-white print:w-8 print:h-8 print:text-sm print:left-[-2px]">
-                          {dayPlan.day}
-                          </span>
-                          {index < itinerary.itinerary.length - 1 && (
-                              <div className="absolute left-[14px] md:left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden print:bg-gray-300 print:left-[14px] print:bottom-[-1rem]" />
-                          )}
-                          <Card className="ml-4 md:ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow print:shadow-none print:border-l-2 print:border-gray-400 print:ml-4 print:border-accent">
-                          <CardHeader className="p-3 md:p-4 print:p-3">
-                              <CardTitle className="text-lg md:text-xl flex items-center gap-1.5 md:gap-2 print:text-lg print:gap-1.5">
-                                  <MapPinIcon className="h-5 w-5 md:h-6 md:w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
-                              </CardTitle>
-                          </CardHeader>
-                          <CardContent className="p-3 md:p-4 pt-0 space-y-3 print:p-3 print:pt-0 print:space-y-2">
-                              <div>
-                                  <h4 className="font-semibold mb-1.5 text-foreground/90 text-sm md:text-base print:text-sm print:mb-1">Activities:</h4>
-                                  <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm md:text-base print:text-sm print:space-y-0.5">
-                                  {dayPlan.activities?.map((activity, actIndex) => (
-                                      <li key={actIndex}>{activity}</li>
-                                  ))}
-                                  {(!dayPlan.activities || dayPlan.activities.length === 0) && (
-                                      <li className="italic">No specific activities listed for today.</li>
-                                  )}
-                                  </ul>
-                              </div>
-                              {dayPlan.hotelRecommendations && dayPlan.hotelRecommendations.length > 0 && (
-                                  <div>
-                                      <Separator className="my-2 md:my-3 print:my-2" />
-                                      <h4 className="font-semibold mb-1.5 text-foreground/90 text-sm md:text-base flex items-center gap-1 print:text-sm print:mb-1">
-                                          <Hotel className="h-4 w-4 md:h-5 md:w-5 text-primary print:h-4 print:w-4 print:text-gray-700" /> Hotel Recommendations:
-                                      </h4>
-                                      <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm md:text-base print:text-sm print:space-y-0.5">
-                                      {dayPlan.hotelRecommendations.map((hotel, hotelIndex) => (
-                                          <li key={hotelIndex}>{hotel}</li>
-                                      ))}
-                                      </ul>
-                                  </div>
-                              )}
-                          </CardContent>
-                          </Card>
-                      </div>
-                      ))}
+              {/* Itinerary Content with ScrollArea */}
+               <div ref={itineraryRef} className="bg-background">
+                 {/* Adjusted ScrollArea height */}
+                <ScrollArea className="w-full rounded-b-md max-h-[75vh] overflow-y-auto"> {/* Remove fixed height, add max-height */}
+                  <CardContent className="p-4 md:p-6 space-y-6"> {/* Wrapper for padding and spacing */}
+                    <div className="p-4 border rounded-lg bg-muted/50 text-center hidden print:block">
+                        <h3 className="text-lg font-semibold text-primary mb-2">VisitNepal Itinerary</h3>
+                        <p className="text-muted-foreground text-sm">Generated for {originalFormValues?.duration} days, starting from {originalFormValues?.startPoint}.</p>
                     </div>
-                  </ScrollArea>
-                </CardContent>
+                    {itinerary.itinerary.map((dayPlan, index) => (
+                    <div key={index} className="relative pl-8 md:pl-10 group print:pl-8">
+                        {/* Timeline Dot */}
+                        <span className="absolute left-[-2px] top-1 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-lg shadow z-10 print:bg-gray-700 print:text-white print:w-8 print:h-8 print:text-sm print:left-[-2px]">
+                        {dayPlan.day}
+                        </span>
+                        {/* Timeline Line */}
+                        {index < itinerary.itinerary.length - 1 && (
+                            <div className="absolute left-[14px] md:left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden print:bg-gray-300 print:left-[14px] print:bottom-[-1rem]" />
+                        )}
+                        {/* Day Card */}
+                        <Card className="ml-4 md:ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow print:shadow-none print:border-l-2 print:border-gray-400 print:ml-4 print:border-accent">
+                        <CardHeader className="p-3 md:p-4 print:p-3">
+                            <CardTitle className="text-lg md:text-xl flex items-center gap-1.5 md:gap-2 print:text-lg print:gap-1.5">
+                                <MapPinIcon className="h-5 w-5 md:h-6 md:w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-3 md:p-4 pt-0 space-y-3 print:p-3 print:pt-0 print:space-y-2">
+                            <div>
+                                <h4 className="font-semibold mb-1.5 text-foreground/90 text-sm md:text-base print:text-sm print:mb-1">Activities:</h4>
+                                <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm md:text-base print:text-sm print:space-y-0.5">
+                                {dayPlan.activities?.map((activity, actIndex) => (
+                                    <li key={actIndex}>{activity}</li>
+                                ))}
+                                {(!dayPlan.activities || dayPlan.activities.length === 0) && (
+                                    <li className="italic">No specific activities listed for today.</li>
+                                )}
+                                </ul>
+                            </div>
+                            {dayPlan.hotelRecommendations && dayPlan.hotelRecommendations.length > 0 && (
+                                <div>
+                                    <Separator className="my-2 md:my-3 print:my-2" />
+                                    <h4 className="font-semibold mb-1.5 text-foreground/90 text-sm md:text-base flex items-center gap-1 print:text-sm print:mb-1">
+                                        <Hotel className="h-4 w-4 md:h-5 md:w-5 text-primary print:h-4 print:w-4 print:text-gray-700" /> Hotel Recommendations:
+                                    </h4>
+                                    <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm md:text-base print:text-sm print:space-y-0.5">
+                                    {dayPlan.hotelRecommendations.map((hotel, hotelIndex) => (
+                                        <li key={hotelIndex}>{hotel}</li>
+                                    ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </CardContent>
+                        </Card>
+                    </div>
+                    ))}
+                  </CardContent>
+                </ScrollArea>
              </div>
             </Card>
-            </>
           )}
+
+          {/* Empty / Placeholder States */}
           {itinerary && itinerary.itinerary.length === 0 && !isLoading && (
              <Alert>
                 <Info className="h-4 w-4" />
@@ -610,3 +617,5 @@ export function ItineraryPlanner() {
     </div>
   );
 }
+
+
