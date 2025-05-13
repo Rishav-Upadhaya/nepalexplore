@@ -21,19 +21,18 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { nepalDistrictsByRegion, type DistrictName, budgetRanges } from '@/types';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 
 const formSchema = z.object({
   itineraryType: z.enum(["custom", "random"], { required_error: "Please select an itinerary type." }),
   interests: z.string().optional(),
-  // Removed the max(30) limit for duration
   duration: z.coerce.number().min(1, { message: "Duration must be at least 1 day." }),
   budget: z.enum(Object.keys(budgetRanges) as [keyof typeof budgetRanges, ...(keyof typeof budgetRanges)[]] , { required_error: "Please select a budget range." }),
   startPoint: z.string({required_error: "Please select a starting point."}).min(1, { message: "Please select a starting point." }),
-  endPoint: z.string().optional(), // End point is optional for both now
+  endPoint: z.string().optional(),
   mustVisitPlaces: z.string().optional(),
 }).refine(data => {
-    // Interest check only applies to custom itinerary
     if (data.itineraryType === 'custom' && (!data.interests || data.interests.length < 10)) {
       return false;
     }
@@ -43,7 +42,6 @@ const formSchema = z.object({
     path: ["interests"],
   });
 
-// Schema for modification input
 const modificationSchema = z.object({
     modificationRequest: z.string().min(10, "Please describe your desired changes (min 10 characters).").max(500, "Modification request is too long (max 500 characters).")
 });
@@ -56,7 +54,7 @@ export function ItineraryPlanner() {
   const [error, setError] = useState<string | null>(null);
   const itineraryRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const [originalFormValues, setOriginalFormValues] = useState<z.infer<typeof formSchema> | null>(null); // To store initial form values
+  const [originalFormValues, setOriginalFormValues] = useState<z.infer<typeof formSchema> | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -66,8 +64,8 @@ export function ItineraryPlanner() {
       duration: 7,
       budget: undefined,
       startPoint: "Kathmandu",
-      endPoint: "none", // Default to "none"
-      mustVisitPlaces: "none", // Default to "none"
+      endPoint: "none",
+      mustVisitPlaces: "none",
     },
   });
 
@@ -80,16 +78,11 @@ export function ItineraryPlanner() {
 
   const itineraryType = form.watch("itineraryType");
 
-  // Reset endpoint and mustVisit to 'none' when type changes to random
   useEffect(() => {
     if (itineraryType === 'random') {
-      // Keep endPoint available but reset mustVisit
       form.setValue('mustVisitPlaces', 'none');
-      form.setValue('interests', ''); // Also clear interests
-      form.clearErrors('interests'); // Clear interest validation errors
-    } else {
-        // Optionally reset endPoint if needed when switching back to custom
-        // form.setValue('endPoint', 'none');
+      form.setValue('interests', '');
+      form.clearErrors('interests');
     }
   }, [itineraryType, form]);
 
@@ -98,15 +91,15 @@ export function ItineraryPlanner() {
     setIsLoading(true);
     setError(null);
     setItinerary(null);
-    setOriginalFormValues(values); // Store the form values used for generation
+    setOriginalFormValues(values);
     try {
       const budgetLabel = budgetRanges[values.budget];
       const payload: AiItineraryToolInput = {
         ...values,
         budget: budgetLabel,
-        interests: values.itineraryType === 'custom' ? values.interests : undefined, // Only pass interests for custom
-        endPoint: values.endPoint === "none" || values.endPoint === "" ? undefined : values.endPoint, // Handle 'none' selection for both
-        mustVisitPlaces: values.itineraryType === 'custom' && values.mustVisitPlaces !== "none" && values.mustVisitPlaces !== "" ? values.mustVisitPlaces : undefined, // Only pass mustVisit for custom if not 'none'
+        interests: values.itineraryType === 'custom' ? values.interests : undefined,
+        endPoint: values.endPoint === "none" || values.endPoint === "" || !values.endPoint ? undefined : values.endPoint,
+        mustVisitPlaces: values.itineraryType === 'custom' && values.mustVisitPlaces !== "none" && values.mustVisitPlaces !== "" && values.mustVisitPlaces ? values.mustVisitPlaces : undefined,
       };
 
       const result = await aiItineraryTool(payload);
@@ -134,25 +127,24 @@ export function ItineraryPlanner() {
         toast({ title: "Error", description: "No itinerary to modify or original parameters missing.", variant: "destructive"});
         return;
     }
-    setIsLoading(true); // Use same loading state or a new one like `isModifying`
+    setIsLoading(true);
     setError(null);
 
     try {
         const budgetLabel = budgetRanges[originalFormValues.budget];
         const payload: AiItineraryToolInput = {
-            ...originalFormValues, // Use original form values for context
+            ...originalFormValues,
             budget: budgetLabel,
-            previousItinerary: itinerary, // Pass the current itinerary
+            previousItinerary: itinerary,
             modificationRequest: modificationData.modificationRequest,
-            // Ensure optional fields are correctly set from originalFormValues
             interests: originalFormValues.itineraryType === 'custom' ? originalFormValues.interests : undefined,
-            endPoint: originalFormValues.endPoint === "none" || originalFormValues.endPoint === "" ? undefined : originalFormValues.endPoint,
-            mustVisitPlaces: originalFormValues.itineraryType === 'custom' && originalFormValues.mustVisitPlaces !== "none" && originalFormValues.mustVisitPlaces !== "" ? originalFormValues.mustVisitPlaces : undefined,
+            endPoint: originalFormValues.endPoint === "none" || originalFormValues.endPoint === "" || !originalFormValues.endPoint ? undefined : originalFormValues.endPoint,
+            mustVisitPlaces: originalFormValues.itineraryType === 'custom' && originalFormValues.mustVisitPlaces !== "none" && originalFormValues.mustVisitPlaces !== "" && originalFormValues.mustVisitPlaces ? originalFormValues.mustVisitPlaces : undefined,
         };
 
         const result = await aiItineraryTool(payload);
-        setItinerary(result); // Update with modified itinerary
-        modificationForm.reset(); // Reset modification input
+        setItinerary(result);
+        modificationForm.reset();
         toast({
             title: "Itinerary Modified!",
             description: "Your travel plan has been updated based on your request.",
@@ -186,23 +178,21 @@ export function ItineraryPlanner() {
          useCORS: true,
          logging: false,
          backgroundColor: null,
-         scrollX: 0, // Ensure capture starts from the top-left
-         scrollY: -window.scrollY, // Adjust for current scroll position
-         windowWidth: document.documentElement.offsetWidth, // Use full document width initially
-         windowHeight: document.documentElement.offsetHeight // Use full document height initially
+         scrollX: 0,
+         scrollY: -window.scrollY,
+         windowWidth: itineraryRef.current.scrollWidth, // Capture full width of the scrollable content
+         windowHeight: itineraryRef.current.scrollHeight // Capture full height of the scrollable content
       });
 
-       // Define PDF dimensions (A4 in points: 595.28 x 841.89)
       const pdfWidth = 595.28;
       const pdfHeight = 841.89;
-      const pdfMargin = 30; // Margin in points
+      const pdfMargin = 30;
       const contentWidth = pdfWidth - (pdfMargin * 2);
 
-      // Calculate image dimensions and scaling
       const imgProps= pdf.getImageProperties(canvas);
       const imgWidth = imgProps.width;
       const imgHeight = imgProps.height;
-      const ratio = contentWidth / imgWidth; // Scale image to fit content width
+      const ratio = contentWidth / imgWidth;
       const scaledImgHeight = imgHeight * ratio;
 
       const pdf = new jsPDF({
@@ -211,28 +201,47 @@ export function ItineraryPlanner() {
         format: 'a4',
       });
 
-      let position = pdfMargin; // Initial y position with margin
-      let heightLeft = scaledImgHeight;
+      let position = pdfMargin;
+      let currentImagePartY = 0; // Track the Y position of the image part being added
 
-       // Add the first chunk of the image
-      pdf.addImage(canvas, 'PNG', pdfMargin, position, contentWidth, scaledImgHeight);
-      heightLeft -= (pdfHeight - pdfMargin - position); // Calculate remaining height on the first page
-
-
-       // Add subsequent pages if needed
-      while (heightLeft > 0) {
-          position = heightLeft - scaledImgHeight - pdfMargin; // Calculate the negative offset for the next page
+      // Loop to add parts of the image to multiple pages
+      while (currentImagePartY < scaledImgHeight) {
+        if (currentImagePartY > 0) { // Add new page for subsequent parts
           pdf.addPage();
-          pdf.addImage(canvas, 'PNG', pdfMargin, position, contentWidth, scaledImgHeight);
-          heightLeft -= (pdfHeight - pdfMargin*2); // Subtract full page height (minus top/bottom margins)
-      }
+          position = pdfMargin; // Reset position for new page
+        }
+        // Calculate height of the current part to fit on the page
+        const partHeight = Math.min(pdfHeight - position - pdfMargin, scaledImgHeight - currentImagePartY);
 
+        // Create a temporary canvas for the current part
+        const partCanvas = document.createElement('canvas');
+        partCanvas.width = imgWidth; // Use original image width for slicing
+        partCanvas.height = partHeight / ratio; // Calculate original height of the part
+        const partCtx = partCanvas.getContext('2d');
+
+        if (partCtx) {
+          // Draw the specific part of the main canvas onto the temporary canvas
+          partCtx.drawImage(
+            canvas,
+            0, // sx (source x)
+            currentImagePartY / ratio, // sy (source y - needs to be in original image coordinates)
+            imgWidth, // sWidth (source width)
+            partHeight / ratio, // sHeight (source height - in original image coordinates)
+            0, // dx (destination x on partCanvas)
+            0, // dy (destination y on partCanvas)
+            imgWidth, // dWidth (destination width on partCanvas)
+            partHeight / ratio // dHeight (destination height on partCanvas)
+          );
+          pdf.addImage(partCanvas, 'PNG', pdfMargin, position, contentWidth, partHeight);
+        }
+        currentImagePartY += partHeight;
+      }
 
       pdf.save('nepal-itinerary.pdf');
       toast({ title: "Export Successful!", description: "Your itinerary has been saved as a PDF." });
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      toast({ title: "Export Failed", description: "Could not generate the PDF. Please try again.", variant: "destructive" });
+      toast({ title: "Export Failed", description: `Could not generate the PDF. ${error instanceof Error ? error.message : 'Unknown error'}`, variant: "destructive" });
     } finally {
       setIsExporting(false);
     }
@@ -249,9 +258,7 @@ export function ItineraryPlanner() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
-         {/* Left Column: Form + Modification */}
-        <div className="lg:col-span-1 space-y-8"> {/* Removed sticky positioning */}
-            {/* Plan Your Trip Card */}
+        <div className="lg:col-span-1 space-y-8">
             <Card className="shadow-xl border border-primary/20">
                 <CardHeader className="bg-primary/5 p-6">
                     <CardTitle className="flex items-center gap-2 text-primary"><Route className="h-7 w-7" /> Plan Your Trip</CardTitle>
@@ -269,7 +276,7 @@ export function ItineraryPlanner() {
                             <FormControl>
                                 <RadioGroup
                                 onValueChange={field.onChange}
-                                value={field.value} // Controlled component
+                                value={field.value}
                                 className="flex space-x-4"
                                 >
                                 <FormItem className="flex items-center space-x-2 space-y-0">
@@ -321,7 +328,6 @@ export function ItineraryPlanner() {
                             </FormItem>
                             )}
                         />
-                        {/* EndPoint field now visible for both custom and random */}
                         <FormField
                             control={form.control}
                             name="endPoint"
@@ -387,7 +393,6 @@ export function ItineraryPlanner() {
                                 )}
                             />
                         </div>
-                        {/* Conditional rendering for interests and mustVisitPlaces only for custom type */}
                         {itineraryType === 'custom' && (
                         <>
                             <FormField
@@ -447,7 +452,6 @@ export function ItineraryPlanner() {
                 </CardContent>
             </Card>
 
-            {/* Modification Section */}
             {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
                 <Card className="shadow-xl border">
                     <CardHeader className="bg-muted/50 p-6">
@@ -490,8 +494,7 @@ export function ItineraryPlanner() {
         </div>
 
 
-        {/* Right Column: Itinerary Display */}
-        <div className="lg:col-span-2 mt-8 lg:mt-0"> {/* Add margin-top for small screens */}
+        <div className="lg:col-span-2 mt-8 lg:mt-0">
           {isLoading && (
              <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
               <Loader2 className="h-16 w-16 text-primary animate-spin mx-auto mb-6" />
@@ -515,7 +518,7 @@ export function ItineraryPlanner() {
               <CardHeader className="bg-primary/5 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-2xl flex items-center gap-2 text-primary">
-                    <ListChecks className="h-8 w-8"/> Your {originalFormValues?.itineraryType === 'custom' ? 'Custom' : 'Random'} Itinerary {/* Use originalFormValues here */}
+                    <ListChecks className="h-8 w-8"/> Your {originalFormValues?.itineraryType === 'custom' ? 'Custom' : 'Random'} Itinerary
                   </CardTitle>
                   <CardDescription className="text-base mt-1">Here's a day-by-day plan for your adventure in Nepal.</CardDescription>
                 </div>
@@ -525,63 +528,58 @@ export function ItineraryPlanner() {
                 </Button>
               </CardHeader>
               <div ref={itineraryRef} className="bg-background">
-                {/* Adjusted padding for better mobile view */}
-                <CardContent className="p-4 md:p-6 space-y-6">
-                    <div className="p-4 border rounded-lg bg-muted/50 text-center hidden print:block">
-                        <h3 className="text-lg font-semibold text-primary mb-2">VisitNepal Itinerary</h3>
-                        <p className="text-muted-foreground text-sm">Generated for {originalFormValues?.duration} days, starting from {originalFormValues?.startPoint}.</p> {/* Use originalFormValues here */}
+                <CardContent className="p-0"> {/* Removed padding, ScrollArea will handle it */}
+                  <ScrollArea className="h-[600px] lg:h-[calc(100vh-20rem)] w-full rounded-b-md"> {/* Added ScrollArea with defined height */}
+                    <div className="p-4 md:p-6 space-y-6"> {/* Wrapper for padding and spacing */}
+                      <div className="p-4 border rounded-lg bg-muted/50 text-center hidden print:block">
+                          <h3 className="text-lg font-semibold text-primary mb-2">VisitNepal Itinerary</h3>
+                          <p className="text-muted-foreground text-sm">Generated for {originalFormValues?.duration} days, starting from {originalFormValues?.startPoint}.</p>
+                      </div>
+                      {itinerary.itinerary.map((dayPlan, index) => (
+                      <div key={index} className="relative pl-8 md:pl-10 group print:pl-8">
+                          <span className="absolute left-[-2px] top-1 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-lg shadow z-10 print:bg-gray-700 print:text-white print:w-8 print:h-8 print:text-sm print:left-[-2px]">
+                          {dayPlan.day}
+                          </span>
+                          {index < itinerary.itinerary.length - 1 && (
+                              <div className="absolute left-[14px] md:left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden print:bg-gray-300 print:left-[14px] print:bottom-[-1rem]" />
+                          )}
+                          <Card className="ml-4 md:ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow print:shadow-none print:border-l-2 print:border-gray-400 print:ml-4 print:border-accent">
+                          <CardHeader className="p-3 md:p-4 print:p-3">
+                              <CardTitle className="text-lg md:text-xl flex items-center gap-1.5 md:gap-2 print:text-lg print:gap-1.5">
+                                  <MapPinIcon className="h-5 w-5 md:h-6 md:w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
+                              </CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-3 md:p-4 pt-0 space-y-3 print:p-3 print:pt-0 print:space-y-2">
+                              <div>
+                                  <h4 className="font-semibold mb-1.5 text-foreground/90 text-sm md:text-base print:text-sm print:mb-1">Activities:</h4>
+                                  <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm md:text-base print:text-sm print:space-y-0.5">
+                                  {dayPlan.activities?.map((activity, actIndex) => (
+                                      <li key={actIndex}>{activity}</li>
+                                  ))}
+                                  {(!dayPlan.activities || dayPlan.activities.length === 0) && (
+                                      <li className="italic">No specific activities listed for today.</li>
+                                  )}
+                                  </ul>
+                              </div>
+                              {dayPlan.hotelRecommendations && dayPlan.hotelRecommendations.length > 0 && (
+                                  <div>
+                                      <Separator className="my-2 md:my-3 print:my-2" />
+                                      <h4 className="font-semibold mb-1.5 text-foreground/90 text-sm md:text-base flex items-center gap-1 print:text-sm print:mb-1">
+                                          <Hotel className="h-4 w-4 md:h-5 md:w-5 text-primary print:h-4 print:w-4 print:text-gray-700" /> Hotel Recommendations:
+                                      </h4>
+                                      <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm md:text-base print:text-sm print:space-y-0.5">
+                                      {dayPlan.hotelRecommendations.map((hotel, hotelIndex) => (
+                                          <li key={hotelIndex}>{hotel}</li>
+                                      ))}
+                                      </ul>
+                                  </div>
+                              )}
+                          </CardContent>
+                          </Card>
+                      </div>
+                      ))}
                     </div>
-                    {itinerary.itinerary.map((dayPlan, index) => (
-                    // Adjusted relative positioning and padding for mobile
-                    <div key={index} className="relative pl-8 md:pl-10 group print:pl-8">
-                        {/* Adjusted icon size and position */}
-                        <span className="absolute left-[-2px] top-1 flex items-center justify-center w-8 h-8 md:w-10 md:h-10 rounded-full bg-primary text-primary-foreground font-bold text-sm md:text-lg shadow z-10 print:bg-gray-700 print:text-white print:w-8 print:h-8 print:text-sm print:left-[-2px]">
-                        {dayPlan.day}
-                        </span>
-                        {/* Adjusted line position */}
-                        {index < itinerary.itinerary.length - 1 && (
-                            <div className="absolute left-[14px] md:left-[17px] top-10 bottom-[-1.5rem] w-0.5 bg-border group-last:hidden print:bg-gray-300 print:left-[14px] print:bottom-[-1rem]" />
-                        )}
-                         {/* Adjusted margin for mobile */}
-                        <Card className="ml-4 md:ml-6 bg-card border-l-4 border-accent shadow-md hover:shadow-lg transition-shadow print:shadow-none print:border-l-2 print:border-gray-400 print:ml-4 print:border-accent">
-                         {/* Adjusted padding for mobile */}
-                        <CardHeader className="p-3 md:p-4 print:p-3">
-                             {/* Adjusted title size and gap */}
-                            <CardTitle className="text-lg md:text-xl flex items-center gap-1.5 md:gap-2 print:text-lg print:gap-1.5">
-                                <MapPinIcon className="h-5 w-5 md:h-6 md:w-6 text-accent print:h-5 print:w-5 print:text-gray-600" /> {dayPlan.location}
-                            </CardTitle>
-                        </CardHeader>
-                         {/* Adjusted padding and text size for mobile */}
-                        <CardContent className="p-3 md:p-4 pt-0 space-y-3 print:p-3 print:pt-0 print:space-y-2">
-                            <div>
-                                <h4 className="font-semibold mb-1.5 text-foreground/90 text-sm md:text-base print:text-sm print:mb-1">Activities:</h4>
-                                <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm md:text-base print:text-sm print:space-y-0.5">
-                                {dayPlan.activities?.map((activity, actIndex) => (
-                                    <li key={actIndex}>{activity}</li>
-                                ))}
-                                {(!dayPlan.activities || dayPlan.activities.length === 0) && (
-                                    <li className="italic">No specific activities listed for today.</li>
-                                )}
-                                </ul>
-                            </div>
-                            {dayPlan.hotelRecommendations && dayPlan.hotelRecommendations.length > 0 && (
-                                <div>
-                                    <Separator className="my-2 md:my-3 print:my-2" />
-                                    {/* Adjusted heading size and gap */}
-                                    <h4 className="font-semibold mb-1.5 text-foreground/90 text-sm md:text-base flex items-center gap-1 print:text-sm print:mb-1">
-                                        <Hotel className="h-4 w-4 md:h-5 md:w-5 text-primary print:h-4 print:w-4 print:text-gray-700" /> Hotel Recommendations:
-                                    </h4>
-                                    <ul className="list-disc pl-5 space-y-1 text-muted-foreground text-sm md:text-base print:text-sm print:space-y-0.5">
-                                    {dayPlan.hotelRecommendations.map((hotel, hotelIndex) => (
-                                        <li key={hotelIndex}>{hotel}</li>
-                                    ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </CardContent>
-                        </Card>
-                    </div>
-                    ))}
+                  </ScrollArea>
                 </CardContent>
              </div>
             </Card>
