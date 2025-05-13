@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { nepalDistricts, type DistrictName, nepalDistrictsByRegion } from '@/types';
 import Image from 'next/image';
 import { Skeleton } from "@/components/ui/skeleton"; // Import Skeleton
+import { ScrollArea } from '@/components/ui/scroll-area'; // Import ScrollArea
 
 const formSchema = z.object({
   districtName: z.custom<DistrictName>((val) => nepalDistricts.includes(val as DistrictName), {
@@ -137,7 +138,7 @@ export function DistrictExplorer() {
     try {
       const result = await suggestHiddenGems({
         districtName: values.districtName,
-        userPreferences: values.userPreferences,
+        userPreferences: values.userPreferences || undefined, // Ensure undefined if empty
       });
       setHiddenGems(result);
       toast({
@@ -327,88 +328,90 @@ export function DistrictExplorer() {
                    </div>
                  </div>
                </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                 {/* Hidden Gems Section */}
-                 {isLoadingGems && (
-                     <div className="flex items-center justify-center p-4 border rounded-lg bg-muted/50">
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin text-accent" />
-                        <p className="text-accent text-base font-medium">AI is searching for hidden gems based on your preferences for your Nepal tour...</p>
-                    </div>
-                 )}
-                {hiddenGems && !isLoadingGems && (
-                    hiddenGems.hiddenGems.length > 0 ? (
-                        <div className="space-y-3 p-4 border rounded-lg bg-accent/10 border-accent/30">
-                            <h3 className="text-xl font-semibold text-accent flex items-center gap-2">
-                            <Lightbulb className="h-5 w-5" /> AI Hidden Gem Suggestions:
-                            </h3>
-                            <ul className="list-disc list-inside space-y-1 text-foreground/90 text-base">
-                            {hiddenGems.hiddenGems.map((gem, index) => (
-                                <li key={index}>{gem}</li> // Gem now includes description
-                            ))}
-                            </ul>
-                        </div>
-                     ) : (
-                        !gemsError && ( // Only show 'No gems found' if there wasn't an error fetching them
-                          <Alert className="bg-muted/50">
-                            <Info className="h-4 w-4" />
-                            <AlertTitle>No Specific Gems Found</AlertTitle>
-                            <AlertDescription>AI couldn't find specific hidden gems based on the input, or none match your preferences. Explore the general attractions below for your Nepal visit!</AlertDescription>
-                          </Alert>
-                        )
-                    )
-                )}
+              <ScrollArea className="max-h-[70vh]"> {/* Added ScrollArea with max-height */}
+                <CardContent className="p-6 space-y-6">
+                  {/* Hidden Gems Section */}
+                  {isLoadingGems && (
+                      <div className="flex items-center justify-center p-4 border rounded-lg bg-muted/50">
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin text-accent" />
+                          <p className="text-accent text-base font-medium">AI is searching for hidden gems based on your preferences for your Nepal tour...</p>
+                      </div>
+                  )}
+                  {hiddenGems && !isLoadingGems && (
+                      hiddenGems.hiddenGems.length > 0 ? (
+                          <div className="space-y-3 p-4 border rounded-lg bg-accent/10 border-accent/30">
+                              <h3 className="text-xl font-semibold text-accent flex items-center gap-2">
+                              <Lightbulb className="h-5 w-5" /> AI Hidden Gem Suggestions:
+                              </h3>
+                              <ul className="list-disc list-inside space-y-1 text-foreground/90 text-base">
+                              {hiddenGems.hiddenGems.map((gem, index) => (
+                                  <li key={index}>{gem}</li> // Gem now includes description
+                              ))}
+                              </ul>
+                          </div>
+                       ) : (
+                          !gemsError && ( // Only show 'No gems found' if there wasn't an error fetching them
+                            <Alert className="bg-muted/50">
+                              <Info className="h-4 w-4" />
+                              <AlertTitle>No Specific Gems Found</AlertTitle>
+                              <AlertDescription>AI couldn't find specific hidden gems based on the input, or none match your preferences. Explore the general attractions below for your Nepal visit!</AlertDescription>
+                            </Alert>
+                          )
+                      )
+                  )}
 
 
-                {/* District Details Accordion */}
-                <Accordion type="single" collapsible className="w-full" defaultValue="attractions">
-                  <AccordionItem value="attractions">
-                    <AccordionTrigger className="text-xl font-medium hover:text-primary py-3">
-                      <div className="flex items-center gap-2"><MapPin className="h-6 w-6 text-primary" /> Top Attractions</div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-2 pb-3 text-base">
-                       <p className="mb-2 text-muted-foreground">Must-see places when you visit {districtDetails.name}:</p>
-                      <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                        {renderList(districtDetails.attractions)}
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="accommodations">
-                    <AccordionTrigger className="text-xl font-medium hover:text-primary py-3">
-                     <div className="flex items-center gap-2"><Building className="h-6 w-6 text-primary" /> Accommodations</div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-2 pb-3 text-base">
-                       <p className="mb-2 text-muted-foreground">Where to stay during your tour in {districtDetails.name}:</p>
-                       <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                        {renderList(districtDetails.accommodations)}
-                      </ul>
-                       {/* Consider adding a real booking link later */}
-                       {/* <Button variant="link" className="p-0 h-auto text-base mt-2 text-accent hover:text-accent/80">View Booking Options</Button> */}
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="activities">
-                    <AccordionTrigger className="text-xl font-medium hover:text-primary py-3">
-                      <div className="flex items-center gap-2"><Trees className="h-6 w-6 text-primary" /> Activities & Events</div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-2 pb-3 text-base">
-                       <p className="mb-2 text-muted-foreground">Things to do and experience while travelling in {districtDetails.name}:</p>
-                       <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                         {renderList(districtDetails.activities)}
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-                   <AccordionItem value="food">
-                    <AccordionTrigger className="text-xl font-medium hover:text-primary py-3">
-                      <div className="flex items-center gap-2"><Utensils className="h-6 w-6 text-primary" /> Local Cuisine</div>
-                    </AccordionTrigger>
-                    <AccordionContent className="pt-2 pb-3 text-base">
-                       <p className="mb-2 text-muted-foreground">Taste the local flavors of {districtDetails.name} during your visit:</p>
-                       <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                        {renderList(districtDetails.food)}
-                      </ul>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </CardContent>
+                  {/* District Details Accordion */}
+                  <Accordion type="single" collapsible className="w-full" defaultValue="attractions">
+                    <AccordionItem value="attractions">
+                      <AccordionTrigger className="text-xl font-medium hover:text-primary py-3">
+                        <div className="flex items-center gap-2"><MapPin className="h-6 w-6 text-primary" /> Top Attractions</div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-2 pb-3 text-base">
+                         <p className="mb-2 text-muted-foreground">Must-see places when you visit {districtDetails.name}:</p>
+                        <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                          {renderList(districtDetails.attractions)}
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="accommodations">
+                      <AccordionTrigger className="text-xl font-medium hover:text-primary py-3">
+                       <div className="flex items-center gap-2"><Building className="h-6 w-6 text-primary" /> Accommodations</div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-2 pb-3 text-base">
+                         <p className="mb-2 text-muted-foreground">Where to stay during your tour in {districtDetails.name}:</p>
+                         <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                          {renderList(districtDetails.accommodations)}
+                        </ul>
+                         {/* Consider adding a real booking link later */}
+                         {/* <Button variant="link" className="p-0 h-auto text-base mt-2 text-accent hover:text-accent/80">View Booking Options</Button> */}
+                      </AccordionContent>
+                    </AccordionItem>
+                    <AccordionItem value="activities">
+                      <AccordionTrigger className="text-xl font-medium hover:text-primary py-3">
+                        <div className="flex items-center gap-2"><Trees className="h-6 w-6 text-primary" /> Activities & Events</div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-2 pb-3 text-base">
+                         <p className="mb-2 text-muted-foreground">Things to do and experience while travelling in {districtDetails.name}:</p>
+                         <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                           {renderList(districtDetails.activities)}
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+                     <AccordionItem value="food">
+                      <AccordionTrigger className="text-xl font-medium hover:text-primary py-3">
+                        <div className="flex items-center gap-2"><Utensils className="h-6 w-6 text-primary" /> Local Cuisine</div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-2 pb-3 text-base">
+                         <p className="mb-2 text-muted-foreground">Taste the local flavors of {districtDetails.name} during your visit:</p>
+                         <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                          {renderList(districtDetails.food)}
+                        </ul>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </CardContent>
+              </ScrollArea>
             </Card>
           ) : (
              // Initial state when no district is selected and not loading/error
