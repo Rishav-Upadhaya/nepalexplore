@@ -14,73 +14,73 @@ body {
     --card-foreground: 90 25% 20%;
     --popover: 80 50% 98%;
     --popover-foreground: 90 25% 20%;
-    --primary: 90 40% 38%; /* Darker Green for primary actions/text */
-    --primary-foreground: 80 50% 98%; /* Light color for text on primary */
-    --secondary: 90 30% 55%; /* Muted Green for secondary elements */
-    --secondary-foreground: 90 25% 15%; /* Dark for text on secondary */
+    --primary: 120 50% 30%; /* Nepal Flag Crimson Red - Approximation */
+    --primary-foreground: 0 0% 100%; /* White */
+    --secondary: 210 70% 40%; /* Blue from Nepal Flag - Approximation */
+    --secondary-foreground: 0 0% 100%; /* White */
     --muted: 80 40% 90%; /* Lighter green/beige */
     --muted-foreground: 90 25% 40%; /* Muted text color */
-    --accent: 40 90% 60%; /* Warm Yellow/Orange for accents */
+    --accent: 40 90% 60%; /* Saffron/Yellow for highlights */
     --accent-foreground: 40 90% 10%; /* Dark for text on accent */
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 80 30% 85%; /* Border color */
+    --border: 120 10% 75%; /* Muted Red/Brown for border */
     --input: 80 30% 90%; /* Input background */
-    --ring: 40 90% 60%; /* Accent color for rings */
+    --ring: 210 70% 50%; /* Blue for rings */
     --radius: 0.5rem;
 
-    --chart-1: 90 40% 38%; 
-    --chart-2: 140 40% 45%; 
+    --chart-1: 120 50% 30%;
+    --chart-2: 210 70% 40%;
     --chart-3: 40 90% 60%;
-    --chart-4: 200 50% 50%;
-    --chart-5: 30 60% 60%;
+    --chart-4: 140 40% 45%; /* Green */
+    --chart-5: 30 60% 60%; /* Earthy Orange */
 
-    --sidebar-background: 80 50% 92%; 
+    --sidebar-background: 80 50% 92%;
     --sidebar-foreground: 90 25% 20%;
-    --sidebar-primary: 90 40% 38%;
-    --sidebar-primary-foreground: 80 50% 98%;
+    --sidebar-primary: 120 50% 30%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 40 90% 60%;
     --sidebar-accent-foreground: 40 90% 10%;
-    --sidebar-border: 80 30% 80%;
-    --sidebar-ring: 40 90% 60%;
+    --sidebar-border: 120 10% 70%;
+    --sidebar-ring: 210 70% 50%;
   }
 
   .dark {
-    /* For future dark mode - keeping somewhat earthy tones but darker */
-    --background: 90 10% 10%; 
-    --foreground: 80 30% 85%; 
-    --card: 90 10% 15%;
+    /* Dark mode with Nepal flag colors */
+    --background: 210 15% 12%; /* Very Dark Blue */
+    --foreground: 80 30% 85%;
+    --card: 210 15% 18%; /* Slightly lighter dark blue */
     --card-foreground: 80 30% 85%;
-    --popover: 90 10% 15%;
+    --popover: 210 15% 18%;
     --popover-foreground: 80 30% 85%;
-    --primary: 90 45% 48%; /* Slightly brighter green for dark mode */
-    --primary-foreground: 80 50% 98%;
-    --secondary: 90 25% 45%; 
-    --secondary-foreground: 80 50% 95%;
-    --muted: 90 10% 25%;
+    --primary: 0 60% 55%; /* Brighter Crimson Red */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 60% 55%; /* Brighter Blue */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 10% 25%;
     --muted-foreground: 80 30% 70%;
-    --accent: 40 80% 65%; /* Brighter Yellow/Orange */
+    --accent: 40 80% 65%; /* Brighter Saffron/Yellow */
     --accent-foreground: 40 90% 10%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 90 10% 30%;
-    --input: 90 10% 30%;
-    --ring: 40 80% 65%;
+    --border: 0 20% 40%; /* Muted Dark Red */
+    --input: 210 10% 30%;
+    --ring: 210 60% 60%;
 
-    --chart-1: 90 45% 48%;
-    --chart-2: 140 40% 55%;
+    --chart-1: 0 60% 55%;
+    --chart-2: 210 60% 55%;
     --chart-3: 40 80% 65%;
-    --chart-4: 200 50% 60%;
-    --chart-5: 30 60% 70%;
+    --chart-4: 140 40% 55%; /* Green */
+    --chart-5: 30 60% 70%; /* Earthy Orange */
 
-    --sidebar-background: 90 10% 12%; 
+    --sidebar-background: 210 15% 15%;
     --sidebar-foreground: 80 30% 85%;
-    --sidebar-primary: 90 45% 48%;
-    --sidebar-primary-foreground: 80 50% 98%;
+    --sidebar-primary: 0 60% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 40 80% 65%;
     --sidebar-accent-foreground: 40 90% 10%;
-    --sidebar-border: 90 10% 25%;
-    --sidebar-ring: 40 80% 65%;
+    --sidebar-border: 0 20% 35%;
+    --sidebar-ring: 210 60% 60%;
   }
 }
 
@@ -91,4 +91,9 @@ body {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom override for max-h-[75vh] */
+.max-h-\[75vh\] {
+    max-height: 182vh;
 }
