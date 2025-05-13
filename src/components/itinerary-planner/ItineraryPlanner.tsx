@@ -66,8 +66,8 @@ export function ItineraryPlanner() {
       duration: 7,
       budget: undefined,
       startPoint: "Kathmandu",
-      endPoint: "",
-      mustVisitPlaces: "",
+      endPoint: "none", // Default to "none"
+      mustVisitPlaces: "none", // Default to "none"
     },
   });
 
@@ -79,6 +79,20 @@ export function ItineraryPlanner() {
   });
 
   const itineraryType = form.watch("itineraryType");
+
+  // Reset endpoint and mustVisit to 'none' when type changes to random
+  useEffect(() => {
+    if (itineraryType === 'random') {
+      // Keep endPoint available but reset mustVisit
+      form.setValue('mustVisitPlaces', 'none');
+      form.setValue('interests', ''); // Also clear interests
+      form.clearErrors('interests'); // Clear interest validation errors
+    } else {
+        // Optionally reset endPoint if needed when switching back to custom
+        // form.setValue('endPoint', 'none');
+    }
+  }, [itineraryType, form]);
+
 
   const onSubmit = useCallback(async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
@@ -92,7 +106,7 @@ export function ItineraryPlanner() {
         budget: budgetLabel,
         interests: values.itineraryType === 'custom' ? values.interests : undefined, // Only pass interests for custom
         endPoint: values.endPoint === "none" || values.endPoint === "" ? undefined : values.endPoint, // Handle 'none' selection for both
-        mustVisitPlaces: values.itineraryType === 'custom' && (values.mustVisitPlaces === "none" || values.mustVisitPlaces === "") ? undefined : values.mustVisitPlaces, // Only pass mustVisit for custom, handle 'none'
+        mustVisitPlaces: values.itineraryType === 'custom' && values.mustVisitPlaces !== "none" && values.mustVisitPlaces !== "" ? values.mustVisitPlaces : undefined, // Only pass mustVisit for custom if not 'none'
       };
 
       const result = await aiItineraryTool(payload);
@@ -133,7 +147,7 @@ export function ItineraryPlanner() {
             // Ensure optional fields are correctly set from originalFormValues
             interests: originalFormValues.itineraryType === 'custom' ? originalFormValues.interests : undefined,
             endPoint: originalFormValues.endPoint === "none" || originalFormValues.endPoint === "" ? undefined : originalFormValues.endPoint,
-            mustVisitPlaces: originalFormValues.itineraryType === 'custom' && (originalFormValues.mustVisitPlaces === "none" || originalFormValues.mustVisitPlaces === "") ? undefined : originalFormValues.mustVisitPlaces,
+            mustVisitPlaces: originalFormValues.itineraryType === 'custom' && originalFormValues.mustVisitPlaces !== "none" && originalFormValues.mustVisitPlaces !== "" ? originalFormValues.mustVisitPlaces : undefined,
         };
 
         const result = await aiItineraryTool(payload);
@@ -172,32 +186,48 @@ export function ItineraryPlanner() {
          useCORS: true,
          logging: false,
          backgroundColor: null,
-         windowWidth: itineraryRef.current.scrollWidth,
-         windowHeight: itineraryRef.current.scrollHeight,
+         scrollX: 0, // Ensure capture starts from the top-left
+         scrollY: -window.scrollY, // Adjust for current scroll position
+         windowWidth: document.documentElement.offsetWidth, // Use full document width initially
+         windowHeight: document.documentElement.offsetHeight // Use full document height initially
       });
-      const imgData = canvas.toDataURL('image/png');
+
+       // Define PDF dimensions (A4 in points: 595.28 x 841.89)
+      const pdfWidth = 595.28;
+      const pdfHeight = 841.89;
+      const pdfMargin = 30; // Margin in points
+      const contentWidth = pdfWidth - (pdfMargin * 2);
+
+      // Calculate image dimensions and scaling
+      const imgProps= pdf.getImageProperties(canvas);
+      const imgWidth = imgProps.width;
+      const imgHeight = imgProps.height;
+      const ratio = contentWidth / imgWidth; // Scale image to fit content width
+      const scaledImgHeight = imgHeight * ratio;
+
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'pt',
         format: 'a4',
       });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgProps= pdf.getImageProperties(imgData);
-      const imgWidth = imgProps.width;
-      const imgHeight = imgProps.height;
-      const ratio = pdfWidth / imgWidth;
-      const calculatedHeight = imgHeight * ratio;
-      let heightLeft = calculatedHeight;
-      let position = 15;
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
-      heightLeft -= pdfHeight;
-      while (heightLeft >= 0) {
-          position = heightLeft - calculatedHeight + 15;
+
+      let position = pdfMargin; // Initial y position with margin
+      let heightLeft = scaledImgHeight;
+
+       // Add the first chunk of the image
+      pdf.addImage(canvas, 'PNG', pdfMargin, position, contentWidth, scaledImgHeight);
+      heightLeft -= (pdfHeight - pdfMargin - position); // Calculate remaining height on the first page
+
+
+       // Add subsequent pages if needed
+      while (heightLeft > 0) {
+          position = heightLeft - scaledImgHeight - pdfMargin; // Calculate the negative offset for the next page
           pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, calculatedHeight);
-          heightLeft -= pdfHeight;
+          pdf.addImage(canvas, 'PNG', pdfMargin, position, contentWidth, scaledImgHeight);
+          heightLeft -= (pdfHeight - pdfMargin*2); // Subtract full page height (minus top/bottom margins)
       }
+
+
       pdf.save('nepal-itinerary.pdf');
       toast({ title: "Export Successful!", description: "Your itinerary has been saved as a PDF." });
     } catch (error) {
@@ -219,7 +249,8 @@ export function ItineraryPlanner() {
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-1 sticky top-24 space-y-8"> {/* Added space-y-8 */}
+         {/* Left Column: Form + Modification */}
+        <div className="lg:col-span-1 space-y-8"> {/* Removed sticky positioning */}
             {/* Plan Your Trip Card */}
             <Card className="shadow-xl border border-primary/20">
                 <CardHeader className="bg-primary/5 p-6">
@@ -237,17 +268,8 @@ export function ItineraryPlanner() {
                             <FormLabel className="font-semibold text-base">Choose Itinerary Type</FormLabel>
                             <FormControl>
                                 <RadioGroup
-                                onValueChange={(value) => {
-                                    field.onChange(value);
-                                    // Reset specific fields if switching to random
-                                    if (value === 'random') {
-                                        form.resetField("interests");
-                                        // Keep endPoint and mustVisitPlaces available for random now
-                                        // form.resetField("endPoint");
-                                        form.resetField("mustVisitPlaces");
-                                    }
-                                }}
-                                defaultValue={field.value}
+                                onValueChange={field.onChange}
+                                value={field.value} // Controlled component
                                 className="flex space-x-4"
                                 >
                                 <FormItem className="flex items-center space-x-2 space-y-0">
@@ -313,7 +335,7 @@ export function ItineraryPlanner() {
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent>
-                                        <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
+                                        <SelectItem value="none" className="text-base italic">Default (Based on Itinerary)</SelectItem>
                                         {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
                                             <SelectGroup key={region}>
                                                 <SelectLabel className="font-bold">{region}</SelectLabel>
@@ -398,7 +420,7 @@ export function ItineraryPlanner() {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            <SelectItem value="none" className="text-base italic">None (leave blank)</SelectItem>
+                                            <SelectItem value="none" className="text-base italic">None (Let AI Suggest)</SelectItem>
                                             {Object.entries(nepalDistrictsByRegion).map(([region, districts]) => (
                                                 <SelectGroup key={region}>
                                                     <SelectLabel className="font-bold">{region}</SelectLabel>
@@ -425,7 +447,7 @@ export function ItineraryPlanner() {
                 </CardContent>
             </Card>
 
-            {/* Modification Section - MOVED HERE */}
+            {/* Modification Section */}
             {itinerary && itinerary.itinerary.length > 0 && !isLoading && (
                 <Card className="shadow-xl border">
                     <CardHeader className="bg-muted/50 p-6">
@@ -468,7 +490,8 @@ export function ItineraryPlanner() {
         </div>
 
 
-        <div className="lg:col-span-2">
+        {/* Right Column: Itinerary Display */}
+        <div className="lg:col-span-2 mt-8 lg:mt-0"> {/* Add margin-top for small screens */}
           {isLoading && (
              <Card className="shadow-xl flex flex-col items-center justify-center min-h-[400px] text-center bg-muted/30 border">
               <Loader2 className="h-16 w-16 text-primary animate-spin mx-auto mb-6" />
@@ -589,4 +612,3 @@ export function ItineraryPlanner() {
     </div>
   );
 }
-
