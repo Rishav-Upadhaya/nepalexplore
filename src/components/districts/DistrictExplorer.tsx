@@ -188,7 +188,7 @@ export function DistrictExplorer() {
 
       <div className="grid lg:grid-cols-3 gap-8 items-start">
         {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-6 sticky top-24">
+        <div className="lg:col-span-1 space-y-6 lg:sticky top-24">
           <Card className="shadow-lg border border-primary/20">
             <CardHeader className="bg-primary/5">
               <CardTitle className="flex items-center gap-2 text-primary"><Search className="h-6 w-6" /> Select a District</CardTitle>
@@ -328,7 +328,8 @@ export function DistrictExplorer() {
                    </div>
                  </div>
                </CardHeader>
-              <ScrollArea className="max-h-[70vh]"> {/* Added ScrollArea with max-height */}
+              {/* Added ScrollArea with adjusted responsive max-height */}
+              <ScrollArea className="max-h-[60vh] lg:max-h-[70vh]"> {/* Adjust max-height */}
                 <CardContent className="p-6 space-y-6">
                   {/* Hidden Gems Section */}
                   {isLoadingGems && (
