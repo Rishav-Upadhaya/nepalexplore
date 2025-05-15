@@ -1,52 +1,32 @@
 // src/app/signin/page.tsx
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { LogIn } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 export default function SignInPage() {
   return (
     <div className="container flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">
-      <Card className="w-full max-w-md shadow-xl border border-primary/20">
-        <CardHeader className="text-center bg-primary/5 p-8">
-          <LogIn className="mx-auto h-12 w-12 text-primary mb-4" />
-          <CardTitle className="text-3xl font-bold text-primary">Sign In</CardTitle>
+      <Card className="w-full max-w-md shadow-xl border border-destructive/20">
+        <CardHeader className="text-center bg-destructive/5 p-8">
+          <AlertTriangle className="mx-auto h-12 w-12 text-destructive mb-4" />
+          <CardTitle className="text-3xl font-bold text-destructive">Sign In Not Available</CardTitle>
           <CardDescription className="text-base">
-            Access your saved itineraries, district explorations, and more.
+            This feature is currently not available.
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-8 space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-base font-medium">Email Address</Label>
-            <Input id="email" type="email" placeholder="you@example.com" className="h-11 text-base" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-base font-medium">Password</Label>
-            <Input id="password" type="password" placeholder="••••••••" className="h-11 text-base" />
-          </div>
-          <Button type="submit" className="w-full bg-accent hover:bg-accent/90 text-accent-foreground text-lg py-3 h-auto">
-            Sign In
-          </Button>
-        </CardContent>
-        <CardFooter className="flex flex-col items-center p-8 pt-0 border-t bg-muted/30">
-          <p className="text-sm text-muted-foreground">
-            Don't have an account?{" "}
-            <Link href="/signup" className="font-medium text-primary hover:underline">
-              Sign Up
-            </Link>
+        <CardContent className="p-8 text-center">
+          <p className="text-muted-foreground">
+            Please return to the <Link href="/" className="font-medium text-primary hover:underline">Homepage</Link>.
           </p>
-          <Link href="/forgot-password" className="mt-2 text-sm text-muted-foreground hover:underline">
-            Forgot password?
-          </Link>
-        </CardFooter>
+        </CardContent>
       </Card>
     </div>
   );
 }
 
-// Placeholder pages for links from sign in page
+// Placeholder pages for links from sign in page (though sign-in itself is removed)
+// These are kept in case other parts of the app might link to them,
+// or if they are intended to be standalone features later.
 export function SignUpPage() {
     return (
         <div className="container flex min-h-[calc(100vh-10rem)] items-center justify-center py-12">

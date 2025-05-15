@@ -28,10 +28,8 @@ export default function ForgotPasswordPage() {
         </CardContent>
         <CardFooter className="flex flex-col items-center p-8 pt-0 border-t bg-muted/30">
           <p className="text-sm text-muted-foreground">
-            Remembered your password?{" "}
-            <Link href="/signin" className="font-medium text-primary hover:underline">
-              Sign In
-            </Link>
+            {/* Removed link to Sign In */}
+            Password recovery is for future use.
           </p>
         </CardFooter>
       </Card>

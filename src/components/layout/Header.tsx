@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { MapPinned, Route, LogIn, Search, Menu, Mountain, Home } from 'lucide-react';
+import { MapPinned, Route, Search, Menu, Mountain, Home } from 'lucide-react'; // Removed LogIn
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Separator } from '@/components/ui/separator';
@@ -34,12 +34,7 @@ export function Header() {
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="outline" asChild>
-            <Link href="/signin">
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign In
-            </Link>
-          </Button>
+          {/* Removed Sign In Button */}
           <Button variant="default" className="bg-accent hover:bg-accent/90 text-accent-foreground" asChild>
             <Link href="/plan-trip" prefetch={true}>
               <Search className="mr-2 h-4 w-4" />
@@ -82,14 +77,7 @@ export function Header() {
                 </nav>
                 <Separator />
                 <div className="p-4 space-y-3">
-                    <SheetClose asChild>
-                        <Button variant="outline" className="w-full" asChild>
-                            <Link href="/signin">
-                            <LogIn className="mr-2 h-4 w-4" />
-                            Sign In
-                            </Link>
-                        </Button>
-                    </SheetClose>
+                    {/* Removed Sign In Button from mobile menu */}
                     <SheetClose asChild>
                         <Button variant="default" className="bg-accent hover:bg-accent/90 text-accent-foreground w-full" asChild>
                             <Link href="/plan-trip">
