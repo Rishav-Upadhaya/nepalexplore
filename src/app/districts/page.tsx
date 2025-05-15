@@ -1,6 +1,9 @@
+
 import { DistrictExplorer } from '@/components/districts/DistrictExplorer';
 import { nepalDistricts, type DistrictName } from '@/types';
 import type { Metadata, ResolvingMetadata } from 'next';
+import React from 'react'; // Import React for Suspense
+import { Skeleton } from '@/components/ui/skeleton'; // Import a Skeleton for fallback
 
 type Props = {
   searchParams: { [key: string]: string | string[] | undefined }
@@ -47,5 +50,25 @@ export async function generateMetadata(
 export default function DistrictExplorerPage() {
   // Pass searchParams to the client component if needed,
   // although DistrictExplorer already uses useSearchParams internally.
-  return <DistrictExplorer />;
+  return (
+    <React.Suspense fallback={
+      <div className="container py-12 md:py-16">
+        <div className="text-center mb-12">
+          <Skeleton className="h-10 w-3/4 mx-auto mb-3" />
+          <Skeleton className="h-6 w-1/2 mx-auto" />
+        </div>
+        <div className="grid lg:grid-cols-3 gap-8 items-start">
+          <div className="lg:col-span-1 space-y-6">
+            <Skeleton className="h-48 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+          <div className="lg:col-span-2">
+            <Skeleton className="h-[500px] w-full" />
+          </div>
+        </div>
+      </div>
+    }>
+      <DistrictExplorer />
+    </React.Suspense>
+  );
 }
