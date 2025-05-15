@@ -1,4 +1,4 @@
-// use server'
+'use server';
 
 /**
  * @fileOverview Generates captions for virtual postcards based on uploaded images.
