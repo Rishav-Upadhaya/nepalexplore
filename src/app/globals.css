@@ -96,4 +96,5 @@ body {
 /* Custom override for max-h-[75vh] */
 .max-h-\[75vh\] {
     max-height: 70vh; /* Adjusted height to make scrolling more apparent */
+    overflow-y: scroll;
 }
